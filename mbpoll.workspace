@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CodeLite_Workspace Name="mbpoll" Database="" SWTLW="No">
+  <BuildMatrix>
+    <WorkspaceConfiguration Name="Debug" Selected="yes"/>
+    <WorkspaceConfiguration Name="Release" Selected="yes"/>
+  </BuildMatrix>
+</CodeLite_Workspace>

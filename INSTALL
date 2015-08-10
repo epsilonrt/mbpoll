@@ -1,0 +1,43 @@
+SOLARPI INSTALL file
+--------------------------------------------------------------------------------
+
+A- PREREQUIS
+------------
+Pour compiler solarpid, il faut un certains nombre de prérequis.
+
+1. ssdv
+$ git clone git://git.btssn.net/ssdv
+$ cd ssdv
+$ make
+$ sudo make install
+
+2. libradio
+$ git clone git://git.btssn.net/libradio
+$ cd libradio
+$ make
+$ sudo make install
+$ sudo apt-get install swig python-serial
+$ cd python
+$ python setup.py build_ext
+$ sudo python setup.py install
+
+3. wiringPi (version modifiée btssn.net)
+$ git clone git://git.btssn.net/wiringPi
+$ cd wiringPi
+$ ./build
+
+4. gpsd et libgps-dev
+$ sudo apt-get install gpsd gpsd-clients libgps-dev
+
+5. libconfig-dev
+$ sudo apt-get install libconfig-dev
+
+Pour compiler les tests ssdv, il faut :
+6. libsdl et libsdl-image
+$ sudo apt-get install libsdl1.2-dev libsdl-image1.2-dev
+
+B- COMPILATION
+--------------
+$ cd solarPi/rpi/pod/solarpid
+$ make
+$ sudo make install
