@@ -39,7 +39,6 @@ extern "C" {
 #define CHIPIO_SLAVEADDR_MAX 0x77
 
 /* default values =========================================================== */
-#define DEFAULT_LOG_LEVEL     LOG_UPTO(LOG_NOTICE)
 #define DEFAULT_MODE          eModeTcp
 #define DEFAULT_FUNCTION      eFuncHoldingReg
 #define DEFAULT_SLAVEADDR     1

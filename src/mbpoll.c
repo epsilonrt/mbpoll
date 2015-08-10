@@ -15,15 +15,15 @@
 #include <string.h>
 #include <ctype.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <errno.h>
-#include <unistd.h>
+#include <getopt.h>
 #include <signal.h>
 #include <float.h>
 #include <assert.h>
 #include <modbus/modbus.h>
 #include <sysio/delay.h>
 #include <sysio/serial.h>
-#include <sysio/log.h>
 #include "version-git.h"
 #include "config.h"
 
@@ -31,11 +31,6 @@
 #if __SIZEOF_FLOAT__ != 4 && !defined (__STDC_IEC_559__)
 # warning it seems that this platform does not conform to the IEEE-754 standard !
 # define MBPOLL_FLOAT_DISABLE
-#endif
-#ifdef DEBUG
-# define VERBOSE_LOG_LEVEL LOG_UPTO (LOG_DEBUG)
-#else
-# define VERBOSE_LOG_LEVEL LOG_UPTO (LOG_INFO)
 #endif
 
 /* types ==================================================================== */
@@ -163,6 +158,7 @@ static const char sUnknownStr[] = "unknown";
 static const char sIntStr[] = "32-bit integer";
 static const char sFloatStr[] = "32-bit float";
 static const char sWordStr[] = "16-bit register";
+static const char * progname;
 
 /* structures =============================================================== */
 typedef struct xChipIoContext xChipIoContext;
@@ -304,8 +300,8 @@ int
 main (int argc, char **argv) {
   int iNextOption, iRet = 0;
   char * p;
-
-  vLogInit (DEFAULT_LOG_LEVEL);
+  
+  progname = argv[0];
 
   do  {
 
@@ -314,7 +310,6 @@ main (int argc, char **argv) {
     switch (iNextOption) {
 
       case 'v':
-        vLogSetMask (VERBOSE_LOG_LEVEL);
         ctx.bIsVerbose = true;
         PDEBUG ("debug enabled");
         break;
@@ -537,10 +532,10 @@ main (int argc, char **argv) {
 
     // Récupération sur la ligne de commande des données à écrire
     if (iNbToWrite) {
-      int iValue, i = 0;
+      int iValue, i = 0, arg;
       double dValue;
 
-      for (int arg = optind + 1; arg < argc; arg++, i++) {
+      for (arg = optind + 1; arg < argc; arg++, i++) {
 
         switch (ctx.eFunction) {
 
@@ -596,11 +591,12 @@ main (int argc, char **argv) {
     ctx.piSlaveAddr[0] = DEFAULT_SLAVEADDR;
     ctx.iSlaveCount = 1;
   }
+  int i;
 
   // Fin de vérification des valeurs de paramètres et création des contextes
   switch (ctx.eMode) {
     case eModeRtu:
-      for (int i = 0; i < ctx.iSlaveCount; i++) {
+      for (i = 0; i < ctx.iSlaveCount; i++) {
         vCheckIntRange (sSlaveAddrStr, ctx.piSlaveAddr[i],
                         RTU_SLAVEADDR_MIN, SLAVEADDR_MAX);
       }
@@ -609,7 +605,7 @@ main (int argc, char **argv) {
       break;
 
     case eModeTcp:
-      for (int i = 0; i < ctx.iSlaveCount; i++) {
+      for (i = 0; i < ctx.iSlaveCount; i++) {
         vCheckIntRange (sSlaveAddrStr, ctx.piSlaveAddr[i],
                         TCP_SLAVEADDR_MIN, SLAVEADDR_MAX);
       }
@@ -642,15 +638,14 @@ main (int argc, char **argv) {
   // Réglage du timeout de réponse
   struct timeval xRespTimeout;
 #ifdef DEBUG
-  struct timeval xByteTimeout;
+  uint32_t  sec, usec;
 
-  modbus_get_byte_timeout (ctx.xBus, &xByteTimeout);
-  PDEBUG ("Get byte timeout: %ld s, %ld us",
-          xByteTimeout.tv_sec, xByteTimeout.tv_usec);
+  modbus_get_byte_timeout (ctx.xBus, &sec, &usec);
+  PDEBUG ("Get byte timeout: %d s, %d us", sec, usec);
 #endif
   xRespTimeout.tv_sec = (long) ctx.dTimeout;
   xRespTimeout.tv_usec = (ctx.dTimeout - (double) xRespTimeout.tv_sec) * 1E6;
-  modbus_set_response_timeout (ctx.xBus, &xRespTimeout);
+  modbus_set_response_timeout (ctx.xBus, xRespTimeout.tv_sec, xRespTimeout.tv_usec);
   PDEBUG ("Set response timeout to %ld sec, %ld us",
           xRespTimeout.tv_sec, xRespTimeout.tv_usec);
 
@@ -727,9 +722,10 @@ main (int argc, char **argv) {
         // Fin écriture --------------------------------------------------------
       }
       else {
-
+        int i;
+        
         // Lecture -------------------------------------------------------------
-        for (int i = 0; i < ctx.iSlaveCount; i++) {
+        for (i = 0; i < ctx.iSlaveCount; i++) {
 
           modbus_set_slave (ctx.xBus, ctx.piSlaveAddr[i]);
           ctx.iTxCount++;
@@ -801,8 +797,8 @@ main (int argc, char **argv) {
 // -----------------------------------------------------------------------------
 void
 vPrintReadValues (int iAddr, int iCount, xMbPollContext * ctx) {
-
-  for (int i = 0; i < iCount; i++) {
+  int i;
+  for (i = 0; i < iCount; i++) {
 
     printf ("[%d]: \t", iAddr);
 
@@ -853,7 +849,7 @@ vReportSlaveID (const xMbPollContext * ctx) {
 
   vPrintCommunicationSetup (ctx);
 
-  int iRet = modbus_report_slave_id (ctx->xBus, ucReport);
+  int iRet = modbus_report_slave_id (ctx->xBus, 256, ucReport);
 
   if (iRet < 0) {
 
@@ -875,8 +871,9 @@ vReportSlaveID (const xMbPollContext * ctx) {
       );
 
       if (iLen > 0) {
+        int i;
         printf ("Data  : ");
-        for (int i = 2; i < (iLen + 2); i++) {
+        for (i = 2; i < (iLen + 2); i++) {
 
           if (isprint (ucReport[i])) {
 
@@ -902,32 +899,17 @@ void
 vPrintCommunicationSetup (const xMbPollContext * ctx) {
 
   if (ctx->eMode == eModeRtu) {
-    xSerialIos xIos;
-    int iRet;
 #if CFG_CHIPIO_DEVICE == 0
 // -----------------------------------------------------------------------------
     const char sAddStr[] = "";
-    iRet = iSerialGetAttr (modbus_get_socket (ctx->xBus), &xIos);
-    if (iRet != 0) {
-      vIoErrorExit ("Unable to get serial port attributes");
-    }
-    assert (iRet == 0);
 #else /* CFG_CHIPIO_DEVICE != 0 */
 // -----------------------------------------------------------------------------
     const char * sAddStr;
     if (bIsChipIo) {
-      iRet = iChipIoSerialGetAttr (xChipSerial, &xIos);
-      if (iRet != 0) {
-        vIoErrorExit ("Unable to get chipio serial port attributes");
-      }
       sAddStr = " via ChipIo serial port";
     }
     else {
 
-      iRet = iSerialGetAttr (modbus_get_socket (ctx->xBus), &xIos);
-      if (iRet != 0) {
-        vIoErrorExit ("Unable to get serial port attributes");
-      }
       sAddStr = "";
     }
 // -----------------------------------------------------------------------------
@@ -937,7 +919,7 @@ vPrintCommunicationSetup (const xMbPollContext * ctx) {
             "                        t/o %.2f s, poll rate %d ms\n"
             , ctx->sDevice
             , sAddStr
-            , sSerialAttrToStr (&xIos)
+            , sSerialAttrToStr (&ctx->xRtu)
             , ctx->dTimeout
             , ctx->iPollRate);
   }
@@ -1079,7 +1061,7 @@ vFailureExit (bool bHelp, const char *format, ...) {
   va_list va;
 
   va_start (va, format);
-  fprintf (stderr, "%s: ", __progname);
+  fprintf (stderr, "%s: ", progname);
   vfprintf (stderr, format, va);
   if (bHelp) {
     fprintf (stderr, " ! Try -h for help.\n");
@@ -1105,7 +1087,7 @@ vVersion (void)  {
 void
 vHello (void) {
   printf ("%s %s - FieldTalk(tm) Modbus(R) Master Simulator\n",
-          basename (__progname), VERSION_SHORT);
+          basename (progname), VERSION_SHORT);
   printf ("Copyright © 2015 %s\n"
           "All rights reserved.\n"
           "This software is governed by the CeCILL license <http://www.cecill.info>\n\n"
@@ -1115,7 +1097,7 @@ vHello (void) {
 // -----------------------------------------------------------------------------
 void
 vUsage (FILE * stream, int exit_msg) {
-  char * sMyName =  basename (__progname);
+  char * sMyName =  basename (progname);
   fprintf (stream,
            "usage : %s [ options ] device|host [ writevalues... ] [ options ]\n\n"
            , sMyName);
@@ -1230,8 +1212,8 @@ vUsage (FILE * stream, int exit_msg) {
 // -----------------------------------------------------------------------------
 void
 vCheckEnum (const char * sName, int iElmt, const int * iList, int iSize) {
-
-  for (int i = 0; i < iSize; i++) {
+  int i;
+  for (i = 0; i < iSize; i++) {
 
     if (iElmt == iList[i]) {
 
@@ -1277,8 +1259,8 @@ strlwr (char * str) {
 int
 iGetEnum (const char * sName, char * sElmt, const char ** psStrList,
           const int * iList, int iSize) {
-
-  for (int i = 0; i < iSize; i++) {
+  int i;
+  for (i = 0; i < iSize; i++) {
 
     if (strcasecmp (sElmt, psStrList[i]) == 0) {
 
@@ -1293,8 +1275,9 @@ iGetEnum (const char * sName, char * sElmt, const char ** psStrList,
 // -----------------------------------------------------------------------------
 const char *
 sEnumToStr (int iElmt, const int * iList, const char ** psStrList, int iSize) {
+  int i;
 
-  for (int i = 0; i < iSize;) {
+  for (i = 0; i < iSize;) {
     if (iElmt == iList[i]) {
       return psStrList[i];
     }
@@ -1321,8 +1304,9 @@ sFunctionToStr (eFunctions eFunction) {
 // -----------------------------------------------------------------------------
 void
 vPrintIntList (int * iList, int iLen) {
+  int i;
   putchar ('[');
-  for (int i = 0; i < iLen; i++) {
+  for (i = 0; i < iLen; i++) {
     printf ("%d", iList[i]);
     if (i != (iLen - 1)) {
       putchar (',');
@@ -1339,7 +1323,7 @@ iGetIntList (const char * name, const char * sList, int * iLen) {
   // 12,3,5:9,45
 
   int * iList = NULL;
-  int i, iFirst, iCount = 0;
+  int i, iFirst = 0, iCount = 0;
   bool bIsLast = false;
   const char * p = sList;
   char * endptr;
