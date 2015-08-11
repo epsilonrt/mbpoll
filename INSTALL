@@ -1,43 +1,38 @@
-SOLARPI INSTALL file
---------------------------------------------------------------------------------
+Instructions pour la compilation et l'installation:
+---------------------------------------------------
+Pour compiler mbpoll, il faut un compilateur C C89 et qmake.
+mbpoll n'utilise pas la librairie Qt, uniquement l'utilitaire qmake afin
+de compiler facilement sur plusieurs plateformes.
 
-A- PREREQUIS
-------------
-Pour compiler solarpid, il faut un certains nombre de prérequis.
+La compilation a été testée sur linux x86 et x86_64, Windows 7 x86 et
+linux ARM (Raspbian).
 
-1. ssdv
-$ git clone git://git.btssn.net/ssdv
-$ cd ssdv
+Sur un système Debian:
+$ sudo apt-get install build-essential
+$ cd mbpoll
+$ qmake
 $ make
 $ sudo make install
 
-2. libradio
-$ git clone git://git.btssn.net/libradio
-$ cd libradio
+Sur Raspberry Pi, il est possible de valider la prise en charge des
+circuits d'interface Chipio afin de gérer des esclaves ModBus à travers
+le bus I2c. Il faut dans ce cas installer préalablement la librairie
+SysIo (version >= 0.2-26) et valider l'option à l'appel de qmake :
+$ cd sysio
 $ make
 $ sudo make install
-$ sudo apt-get install swig python-serial
-$ cd python
-$ python setup.py build_ext
-$ sudo python setup.py install
-
-3. wiringPi (version modifiée btssn.net)
-$ git clone git://git.btssn.net/wiringPi
-$ cd wiringPi
-$ ./build
-
-4. gpsd et libgps-dev
-$ sudo apt-get install gpsd gpsd-clients libgps-dev
-
-5. libconfig-dev
-$ sudo apt-get install libconfig-dev
-
-Pour compiler les tests ssdv, il faut :
-6. libsdl et libsdl-image
-$ sudo apt-get install libsdl1.2-dev libsdl-image1.2-dev
-
-B- COMPILATION
---------------
-$ cd solarPi/rpi/pod/solarpid
+$ cd ../mbpoll
+$ qmake CONFIG+=chipio
 $ make
 $ sudo make install
+
+Sur un système Windows, il faut installer un compilateur Microsoft 
+(testé avec Visual Studio 2013 Community) et Qt (testé avec Qt 5.4)
+La phase d'installation du compilateur et de Qt étant très longue, il 
+est possible d'utiliser le fichier d'installation précompilé.
+Une fois installé, il faut compiler à partir d'une invite de commande
+Qt 32-bit MSVC (élévation nécessaire pour install) :
+> cd mbpoll
+> qmake
+> nmake
+> nmake install
