@@ -12,14 +12,6 @@
 extern "C" {
 #endif
 
-/* features ================================================================= */
-#ifdef ARCH_ARM_RASPBERRYPI
-// Disponible uniquement pour le raspberry pi
-#define USE_CHIPIO 1
-#else
-#define USE_CHIPIO 0
-#endif
-
 /* constants ================================================================ */
 #define RTU_SLAVEADDR_MIN 1
 #define TCP_SLAVEADDR_MIN 0
