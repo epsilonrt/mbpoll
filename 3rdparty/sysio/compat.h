@@ -1,8 +1,8 @@
 /**
- * @file sysio/delay.h
- * @brief Temporisation
+ * @file sysio/compat.h
+ * @brief Fonctions de portabilité POSIX, GNU, Microsoft
  *
- * Copyright © 2014 Pascal JEAN aka epsilonRT <pascal.jean--AT--btssn.net>
+ * Copyright © 2015 Pascal JEAN aka epsilonRT <pascal.jean--AT--btssn.net>
  * All rights reserved.
  * This software is governed by the CeCILL license <http://www.cecill.info>
  */
@@ -11,15 +11,28 @@
 #define _SYSIO_COMPAT_H_
 
 #if defined(_MSC_VER)
+// -----------------------------------------------------------------------------
+// Portabilité POSIX et GNU
+#include <string.h>
+
+// -----------------------------------------------------------------------------
+__inline int 
+strcasecmp(const char *s1, const char *s2) {
+  
+  return _stricmp (s1, s2);
+}
 
 #if _MSC_VER < 1900
+// -----------------------------------------------------------------------------
 #include <stdio.h>
 #include <stdarg.h>
 
 #define snprintf c99_snprintf
 #define vsnprintf c99_vsnprintf
 
-__inline int c99_vsnprintf (char *outBuf, size_t size, const char *format, va_list ap) {
+// -----------------------------------------------------------------------------
+__inline int 
+c99_vsnprintf (char *outBuf, size_t size, const char *format, va_list ap) {
   int count = -1;
 
   if (size != 0) {
@@ -32,7 +45,9 @@ __inline int c99_vsnprintf (char *outBuf, size_t size, const char *format, va_li
   return count;
 }
 
-__inline int c99_snprintf (char *outBuf, size_t size, const char *format, ...) {
+// -----------------------------------------------------------------------------
+__inline int 
+c99_snprintf (char *outBuf, size_t size, const char *format, ...) {
   int count;
   va_list ap;
 
@@ -42,17 +57,7 @@ __inline int c99_snprintf (char *outBuf, size_t size, const char *format, ...) {
 
   return count;
 }
-
-
-#endif
-
-#include <string.h>
-
 // -----------------------------------------------------------------------------
-__inline int 
-strcasecmp(const char *s1, const char *s2) {
-  return _stricmp (s1, s2);
-}
-
-#endif
+#endif /* _MSC_VER < 1900 */
+#endif /* _MSC_VER defined */
 #endif /* _SYSIO_COMPAT_H_ defined */

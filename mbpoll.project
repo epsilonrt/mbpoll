@@ -61,7 +61,6 @@
   <VirtualDirectory Name="src">
     <File Name="src/config.h"/>
     <File Name="src/mbpoll.c"/>
-    <File Name="src/Makefile"/>
   </VirtualDirectory>
   <VirtualDirectory Name="mbpoll">
     <File Name="NEWS"/>

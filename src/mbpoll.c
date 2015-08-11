@@ -28,12 +28,15 @@
 #include "version-git.h"
 #include "config.h"
 
+/* constants ================================================================ */
+#define AUTHORS "Pascal JEAN aka epsilonRT"
+#define WEBSITE "http://www.btssn.net"
+
 /* conditionals ============================================================= */
 #if defined(__GNUC__) && __SIZEOF_FLOAT__ != 4 && !defined (__STDC_IEC_559__)
 # error it seems that this platform does not conform to the IEEE-754 standard !
 # define MBPOLL_FLOAT_DISABLE
 #endif
-
 
 /* types ==================================================================== */
 typedef enum {
@@ -71,9 +74,6 @@ typedef enum {
 #define DFLOAT(p,i) ((float *)(p))[i]
 
 /* constants ================================================================ */
-#define AUTHORS "Pascal JEAN aka epsilonRT"
-#define WEBSITE "http://www.btssn.net/solarpi"
-
 static const char * sModeList[] = {
   "RTU",
   "TCP"
@@ -237,7 +237,7 @@ static xMbPollContext ctx = {
   .pvData = NULL
 };
 
-#if CFG_CHIPIO_DEVICE
+#if USE_CHIPIO
 // -----------------------------------------------------------------------------
 #include <chipio/serial.h>
 #include <sysio/rpi.h>
@@ -258,16 +258,11 @@ static const char sChipIoIrqPinStr[] = "chipio irq pin";
 // option -i et -n supplémentaires pour chipio
 static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u04hVvi:n:";
 
-#else /* CFG_CHIPIO_DEVICE == 0 */
+#else /* USE_CHIPIO == 0 */
 /* constants ================================================================ */
 static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u04hVv";
 // -----------------------------------------------------------------------------
-#endif /* CFG_CHIPIO_DEVICE == 0 */
-
-#if CFG_CHIPIO_DEVICE
-// -----------------------------------------------------------------------------
-// -----------------------------------------------------------------------------
-#endif /* CFG_CHIPIO_DEVICE != 0 */
+#endif /* USE_CHIPIO == 0 */
 
 /* private functions ======================================================== */
 void vAllocate (xMbPollContext * ctx);
@@ -464,7 +459,7 @@ main (int argc, char **argv) {
                                     iParityList, SIZEOF_ILIST (iParityList));
         break;
 
-#if CFG_CHIPIO_DEVICE
+#if USE_CHIPIO
 // -----------------------------------------------------------------------------
         // ChipIo --------------------------------------------------------------
       case 'i':
@@ -479,7 +474,7 @@ main (int argc, char **argv) {
         bIsChipIo = true;
         break;
 // -----------------------------------------------------------------------------
-#endif /* CFG_CHIPIO_DEVICE != 0 */
+#endif /* USE_CHIPIO != 0 */
 
         // Misc. ---------------------------------------------------------------
       case 'h':
@@ -528,7 +523,7 @@ main (int argc, char **argv) {
     ctx.eMode = eModeRtu;
     PDEBUG ("Set mode to RTU for serial port");
   }
-#if CFG_CHIPIO_DEVICE
+#if USE_CHIPIO
 // -----------------------------------------------------------------------------
   else if ( (strcasestr (ctx.sDevice, "i2c") && ctx.bIsDefaultMode) ||
             bIsChipIo) {
@@ -565,7 +560,7 @@ main (int argc, char **argv) {
     PDEBUG ("Set mode to RTU for chipio serial port");
   }
 // -----------------------------------------------------------------------------
-#endif /* CFG_CHIPIO_DEVICE != 0 */
+#endif /* USE_CHIPIO != 0 */
   PDEBUG ("Set device=%s", ctx.sDevice);
 
   if ( (ctx.bIsReportSlaveID) && (ctx.eMode != eModeRtu)) {
@@ -961,10 +956,10 @@ void
 vPrintCommunicationSetup (const xMbPollContext * ctx) {
 
   if (ctx->eMode == eModeRtu) {
-#if CFG_CHIPIO_DEVICE == 0
+#if USE_CHIPIO == 0
 // -----------------------------------------------------------------------------
     const char sAddStr[] = "";
-#else /* CFG_CHIPIO_DEVICE != 0 */
+#else /* USE_CHIPIO != 0 */
 // -----------------------------------------------------------------------------
     const char * sAddStr;
     if (bIsChipIo) {
@@ -975,7 +970,7 @@ vPrintCommunicationSetup (const xMbPollContext * ctx) {
       sAddStr = "";
     }
 // -----------------------------------------------------------------------------
-#endif /* CFG_CHIPIO_DEVICE != 0 */
+#endif /* USE_CHIPIO != 0 */
 
     printf ("Communication.........: %s%s, %s\n"
             "                        t/o %.2f s, poll rate %d ms\n"
@@ -1101,12 +1096,12 @@ vSigIntHandler (int sig) {
   free (ctx.piSlaveAddr);
   modbus_close (ctx.xBus);
   modbus_free (ctx.xBus);
-#if CFG_CHIPIO_DEVICE
+#if USE_CHIPIO
 // -----------------------------------------------------------------------------
   vChipIoSerialDelete (xChipSerial);
   iChipIoClose (xChip);
 // -----------------------------------------------------------------------------
-#endif /* CFG_CHIPIO_DEVICE == 0 */
+#endif /* USE_CHIPIO == 0 */
   if (sig == SIGINT) {
     printf ("\neverything was closed.\nHave a nice day !\n");
   }
@@ -1173,12 +1168,12 @@ vUsage (FILE * stream, int exit_msg) {
            "                  COM1, COM2 ...              on Windows\n"
            "                  /dev/ttyS0, /dev/ttyS1 ...  on Linux\n"
            "                  /dev/ser1, /dev/ser2 ...    on QNX\n"
-#if CFG_CHIPIO_DEVICE
+#if USE_CHIPIO
 // -----------------------------------------------------------------------------
            "                I2c bus when using ModBus RTU via ChipIo serial port\n"
            "                  /dev/i2c-0, /dev/i2c-1 ...  on Linux\n"
 // -----------------------------------------------------------------------------
-#endif /* CFG_CHIPIO_DEVICE != 0 */
+#endif /* USE_CHIPIO != 0 */
            "  host          Host name or dotted IP address when using ModBus/TCP protocol\n"
            "  writevalues   List of values to be written.\n"
 //          01234567890123456789012345678901234567890123456789012345678901234567890123456789
@@ -1227,13 +1222,13 @@ vUsage (FILE * stream, int exit_msg) {
            "  -s #          Stopbits (1 or 2, %s is default)\n"
            "  -P #          Parity (none, even, odd, %s is default)\n"
            "  -4            RS-485 mode\n"
-#if CFG_CHIPIO_DEVICE
+#if USE_CHIPIO
 // -----------------------------------------------------------------------------
            "Options for ModBus RTU for ChipIo serial port : \n"
            "  -i #          I2c slave address (0x%02X-0x%02X, 0x%02X is default)\n"
            "  -n #          Irq pin number of GPIO (%d is default)\n"
 // -----------------------------------------------------------------------------
-#endif /* CFG_CHIPIO_DEVICE != 0 */
+#endif /* USE_CHIPIO != 0 */
            "\n"
            "  -h            Print this help summary page\n"
            "  -V            Print version and exit\n"
@@ -1261,14 +1256,14 @@ vUsage (FILE * stream, int exit_msg) {
            , sSerialDataBitsToStr (DEFAULT_RTU_DATABITS)
            , sSerialStopBitsToStr (DEFAULT_RTU_STOPBITS)
            , sSerialParityToStr (DEFAULT_RTU_PARITY)
-#if CFG_CHIPIO_DEVICE
+#if USE_CHIPIO
 // -----------------------------------------------------------------------------
            , CHIPIO_SLAVEADDR_MIN
            , CHIPIO_SLAVEADDR_MAX
            , DEFAULT_CHIPIO_SLAVEADDR
            , DEFAULT_CHIPIO_IRQPIN
 // -----------------------------------------------------------------------------
-#endif /* CFG_CHIPIO_DEVICE != 0 */
+#endif /* USE_CHIPIO != 0 */
            , sMyName);
   exit (exit_msg);
 }

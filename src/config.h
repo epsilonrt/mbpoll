@@ -15,9 +15,9 @@ extern "C" {
 /* features ================================================================= */
 #ifdef ARCH_ARM_RASPBERRYPI
 // Disponible uniquement pour le raspberry pi
-#define CFG_CHIPIO_DEVICE 1
+#define USE_CHIPIO 1
 #else
-#define CFG_CHIPIO_DEVICE 0
+#define USE_CHIPIO 0
 #endif
 
 /* constants ================================================================ */
