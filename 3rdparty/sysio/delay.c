@@ -9,8 +9,6 @@
 #ifdef SYSIO_OS_UNIX
 #include <unistd.h>
 #include <sys/select.h>
-#define Sleep(x) sleep(x)
-#define INFINITE (-1)
 #else
 #include <windows.h>
 #endif
@@ -22,7 +20,30 @@
 int
 delay_ms (long lMs) {
 
-  return delay_us (lMs * 1000UL);
+#ifdef _WIN32
+  if (lMs == -1) {
+
+    Sleep (INFINITE);
+  }
+  else {
+    Sleep (lMs);
+  }
+#else
+  if (lMs == -1) {
+
+    sleep (-1);
+  }
+  else {
+    struct timespec request, remaining;
+    request.tv_nsec = (lMs % 1000UL) * 1000000UL;
+    request.tv_sec  = lMs / 1000UL;
+
+    request.tv_sec = lMs / 1000;
+    while (nanosleep (&request, &remaining) == -1 && errno == EINTR) {
+      request = remaining;
+    }
+  }
+#endif
 }
 
 // -----------------------------------------------------------------------------

@@ -7,6 +7,7 @@
  */
 #include <stdio.h>
 #include <sysio/serial.h>
+#include <sysio/compat.h>
 
 /* public variables ========================================================= */
 const char sUnknown[] = "Unknown" ;

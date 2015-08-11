@@ -24,13 +24,60 @@
 #include <modbus/modbus.h>
 #include <sysio/delay.h>
 #include <sysio/serial.h>
+#include <sysio/compat.h>
 #include "version-git.h"
 #include "config.h"
 
 /* conditionals ============================================================= */
-#if __SIZEOF_FLOAT__ != 4 && !defined (__STDC_IEC_559__)
-# warning it seems that this platform does not conform to the IEEE-754 standard !
+#if defined(__GNUC__) && __SIZEOF_FLOAT__ != 4 && !defined (__STDC_IEC_559__)
+# error it seems that this platform does not conform to the IEEE-754 standard !
 # define MBPOLL_FLOAT_DISABLE
+#endif
+
+#if defined(_MSC_VER)
+// -----------------------------------------------------------------------------
+static char *
+basename (char * path) {
+  static char fname[_MAX_FNAME];
+  _splitpath (path, NULL, NULL, fname, NULL);
+
+  return fname;
+}
+// -----------------------------------------------------------------------------
+static char *
+strcasestr (const char *haystack, const char *needle) {
+  int nlen = strlen (needle);
+  int hlen = strlen (haystack) - nlen + 1;
+  int i;
+
+  for (i = 0; i < hlen; i++) {
+    int j;
+    for (j = 0; j < nlen; j++) {
+      unsigned char c1 = haystack[i + j];
+      unsigned char c2 = needle[j];
+      if (toupper (c1) != toupper (c2)) {
+        goto next;
+      }
+    }
+    return (char *) haystack + i;
+next:
+    ;
+  }
+  return NULL;
+}
+
+// -----------------------------------------------------------------------------
+static char *
+index (const char *s, int c) {
+  
+  while ((s) && (*s)) {
+    if (c == *s) {
+      return s;
+    }
+    s++;
+  }
+  return NULL;
+}
 #endif
 
 /* types ==================================================================== */
@@ -158,7 +205,7 @@ static const char sUnknownStr[] = "unknown";
 static const char sIntStr[] = "32-bit integer";
 static const char sFloatStr[] = "32-bit float";
 static const char sWordStr[] = "16-bit register";
-static const char * progname;
+static char * progname;
 
 /* structures =============================================================== */
 typedef struct xChipIoContext xChipIoContext;
@@ -291,8 +338,10 @@ const char * sEnumToStr (int iElmt, const int * iList,
                          const char ** psStrList, int iSize);
 const char * sFunctionToStr (eFunctions eFunction);
 const char * sModeToStr (eModes eMode);
-char * strlwr (char * str);
 void vSigIntHandler (int sig);
+#if ! defined(_MSC_VER)
+char * strlwr (char * str);
+#endif
 
 /* main ===================================================================== */
 
@@ -300,7 +349,7 @@ int
 main (int argc, char **argv) {
   int iNextOption, iRet = 0;
   char * p;
-  
+
   progname = argv[0];
 
   do  {
@@ -636,18 +685,16 @@ main (int argc, char **argv) {
   }
 
   // Réglage du timeout de réponse
-  struct timeval xRespTimeout;
-#ifdef DEBUG
   uint32_t  sec, usec;
+#ifdef DEBUG
 
   modbus_get_byte_timeout (ctx.xBus, &sec, &usec);
   PDEBUG ("Get byte timeout: %d s, %d us", sec, usec);
 #endif
-  xRespTimeout.tv_sec = (long) ctx.dTimeout;
-  xRespTimeout.tv_usec = (ctx.dTimeout - (double) xRespTimeout.tv_sec) * 1E6;
-  modbus_set_response_timeout (ctx.xBus, xRespTimeout.tv_sec, xRespTimeout.tv_usec);
-  PDEBUG ("Set response timeout to %ld sec, %ld us",
-          xRespTimeout.tv_sec, xRespTimeout.tv_usec);
+  sec = (uint32_t) ctx.dTimeout;
+  usec = (uint32_t) ( (ctx.dTimeout - sec) * 1E6);
+  modbus_set_response_timeout (ctx.xBus, sec, usec);
+  PDEBUG ("Set response timeout to %ld sec, %ld us", sec, usec);
 
   // vSigIntHandler() intercepte le CTRL+C
   signal (SIGINT, vSigIntHandler);
@@ -723,7 +770,7 @@ main (int argc, char **argv) {
       }
       else {
         int i;
-        
+
         // Lecture -------------------------------------------------------------
         for (i = 0; i < ctx.iSlaveCount; i++) {
 
@@ -1243,6 +1290,8 @@ vCheckDoubleRange (const char * sName, double d, double min, double max) {
   }
 }
 
+#if ! defined(_MSC_VER)
+
 // -----------------------------------------------------------------------------
 char *
 strlwr (char * str) {
@@ -1254,6 +1303,7 @@ strlwr (char * str) {
   }
   return str;
 }
+#endif
 
 // -----------------------------------------------------------------------------
 int

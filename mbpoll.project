@@ -51,6 +51,7 @@
       <File Name="3rdparty/sysio/serial.c"/>
       <File Name="3rdparty/sysio/delay.c"/>
       <File Name="3rdparty/sysio/serial.h"/>
+      <File Name="3rdparty/sysio/compat.h"/>
     </VirtualDirectory>
   </VirtualDirectory>
   <Description/>
