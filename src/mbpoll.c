@@ -1165,9 +1165,11 @@ vUsage (FILE * stream, int exit_msg) {
 // -----------------------------------------------------------------------------
 #endif /* CFG_CHIPIO_DEVICE != 0 */
            "  host          Host name or dotted IP address when using ModBus/TCP protocol\n"
-           "  writevalues   List of values to be written. If none specified (default) %s reads data\n"
-           "                If negative numbers are provided, it will precede the list of data to be\n"
-           "                written by two dashes ('--'), for example : \n"
+           "  writevalues   List of values to be written. If none specified (default) %s\n"
+//          01234567890123456789012345678901234567890123456789012345678901234567890123456789
+           "                reads data. If negative numbers are provided, it will precede\n"
+           "                the list of data to be written by two dashes ('--').\n"
+           "                for example : \n"
            "                %s -t4:int /dev/ttyUSB0 -- 123 -1568 8974 -12\n"
            , sMyName
            , sMyName);
@@ -1205,7 +1207,7 @@ vUsage (FILE * stream, int exit_msg) {
            "Options for ModBus / TCP : \n"
            "  -p #          TCP port number (%s is default)\n"
            "Options for ModBus RTU : \n"
-           "  -b #          Baudrate (e.g. 9600, 19200, ...) (%d-%d, %d is default)\n"
+           "  -b #          Baudrate (%d-%d, %d is default)\n"
            "  -d #          Databits (7 or 8, %s for RTU)\n"
            "  -s #          Stopbits (1 or 2, %s is default)\n"
            "  -P #          Parity (none, even, odd, %s is default)\n"
@@ -1220,8 +1222,8 @@ vUsage (FILE * stream, int exit_msg) {
            "\n"
            "  -h            Print this help summary page\n"
            "  -V            Print version and exit\n"
-           "  -v            Verbose mode.  Causes %s to print debugging messages about its\n"
-           "                progress.  This is helpful in debugging connection...\n"
+           "  -v            Verbose mode.  Causes %s to print debugging messages about\n"
+           "                its progress.  This is helpful in debugging connection...\n"
            , sModeToStr (DEFAULT_MODE)
            , RTU_SLAVEADDR_MIN
            , SLAVEADDR_MAX

@@ -32,17 +32,17 @@ Name: en; MessagesFile: compiler:Default.isl; LicenseFile: license.rtf
 
 [CustomMessages]
 en.MainFiles=MBPoll
-en.MainDescription=A graphical user interface allows easy communication with ModBus RTU and TCP slave
+en.MainDescription=A command line user interface allows easy communication with ModBus RTU and TCP slave
 en.Sources=Source Files
 en.Redist=Microsoft Visual C++ 2013 Redistribuable (x86)
 
 [Components]
 Name: main; Description: {cm:MainFiles}; Types: full compact custom; Flags: fixed
-Name: vc_redist; Description: {cm:Redist}; Types: full custom
-Name: source; Description: {cm:Sources}; Types: full custom
+Name: vc_redist; Description: {cm:Redist}; Types: custom
+Name: source; Description: {cm:Sources}; Types: custom
 
 [Tasks]
-Name: modifypath; Description: Add application directory to your environmental path; Flags: unchecked
+Name: modifypath; Description: Add application directory to your environmental path; Flags: checkedonce
 
 [Files]
 Source: app\*; DestDir: {app}; Flags: ignoreversion recursesubdirs createallsubdirs; Components: main

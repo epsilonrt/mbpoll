@@ -2,10 +2,10 @@
 <CodeLite_Workspace Name="mbpoll" Database="" SWTLW="No">
   <Project Name="mbpoll" Path="mbpoll.project" Active="Yes"/>
   <BuildMatrix>
-    <WorkspaceConfiguration Name="Debug" Selected="yes">
+    <WorkspaceConfiguration Name="Debug" Selected="no">
       <Project Name="mbpoll" ConfigName="Debug"/>
     </WorkspaceConfiguration>
-    <WorkspaceConfiguration Name="Release" Selected="no">
+    <WorkspaceConfiguration Name="Release" Selected="yes">
       <Project Name="mbpoll" ConfigName="Release"/>
     </WorkspaceConfiguration>
   </BuildMatrix>
