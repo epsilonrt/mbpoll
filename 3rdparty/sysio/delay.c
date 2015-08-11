@@ -9,6 +9,10 @@
 #ifdef SYSIO_OS_UNIX
 #include <unistd.h>
 #include <sys/select.h>
+#include <time.h>
+#include <errno.h>
+#define Sleep(x) sleep(x)
+#define INFINITE -1
 #else
 #include <windows.h>
 #endif
@@ -44,6 +48,7 @@ delay_ms (long lMs) {
     }
   }
 #endif
+  return 0;
 }
 
 // -----------------------------------------------------------------------------
