@@ -5,7 +5,7 @@
  *
  * Utilise la bibliothèque libmodbus http://libmodbus.org version >= 3.0
  *
- * Copyright © 2015 Pascal JEAN aka epsilonRT <pascal.jean--AT--btssn.net>
+ * Copyright (c) 2015 Pascal JEAN aka epsilonRT <pascal.jean--AT--btssn.net>
  * All rights reserved.
  * This software is governed by the CeCILL license <http://www.cecill.info>
  */
@@ -34,51 +34,6 @@
 # define MBPOLL_FLOAT_DISABLE
 #endif
 
-#if defined(_MSC_VER)
-// -----------------------------------------------------------------------------
-static char *
-basename (char * path) {
-  static char fname[_MAX_FNAME];
-  _splitpath (path, NULL, NULL, fname, NULL);
-
-  return fname;
-}
-// -----------------------------------------------------------------------------
-static char *
-strcasestr (const char *haystack, const char *needle) {
-  int nlen = strlen (needle);
-  int hlen = strlen (haystack) - nlen + 1;
-  int i;
-
-  for (i = 0; i < hlen; i++) {
-    int j;
-    for (j = 0; j < nlen; j++) {
-      unsigned char c1 = haystack[i + j];
-      unsigned char c2 = needle[j];
-      if (toupper (c1) != toupper (c2)) {
-        goto next;
-      }
-    }
-    return (char *) haystack + i;
-next:
-    ;
-  }
-  return NULL;
-}
-
-// -----------------------------------------------------------------------------
-static char *
-index (const char *s, int c) {
-  
-  while ((s) && (*s)) {
-    if (c == *s) {
-      return s;
-    }
-    s++;
-  }
-  return NULL;
-}
-#endif
 
 /* types ==================================================================== */
 typedef enum {
@@ -302,6 +257,7 @@ static const char sChipIoSlaveAddrStr[] = "chipio slave address";
 static const char sChipIoIrqPinStr[] = "chipio irq pin";
 // option -i et -n supplémentaires pour chipio
 static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u04hVvi:n:";
+
 #else /* CFG_CHIPIO_DEVICE == 0 */
 /* constants ================================================================ */
 static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u04hVv";
@@ -339,9 +295,68 @@ const char * sEnumToStr (int iElmt, const int * iList,
 const char * sFunctionToStr (eFunctions eFunction);
 const char * sModeToStr (eModes eMode);
 void vSigIntHandler (int sig);
-#if ! defined(_MSC_VER)
-char * strlwr (char * str);
-#endif
+
+#if defined(_MSC_VER)
+// Portage des fonctions POSIX ou GNU
+// -----------------------------------------------------------------------------
+static char *
+basename (char * path) {
+  static char fname[_MAX_FNAME];
+  _splitpath (path, NULL, NULL, fname, NULL);
+
+  return fname;
+}
+// -----------------------------------------------------------------------------
+static char *
+strcasestr (const char *haystack, const char *needle) {
+  int nlen = strlen (needle);
+  int hlen = strlen (haystack) - nlen + 1;
+  int i;
+
+  for (i = 0; i < hlen; i++) {
+    int j;
+    for (j = 0; j < nlen; j++) {
+      unsigned char c1 = haystack[i + j];
+      unsigned char c2 = needle[j];
+      if (toupper (c1) != toupper (c2)) {
+        goto next;
+      }
+    }
+    return (char *) haystack + i;
+next:
+    ;
+  }
+  return NULL;
+}
+
+// -----------------------------------------------------------------------------
+static char *
+index (const char *s, int c) {
+  
+  while ((s) && (*s)) {
+    if (c == *s) {
+      return (char *)s;
+    }
+    s++;
+  }
+  return NULL;
+}
+#else /* _MSC_VER not defined */
+// Portage des fonctions Microsoft
+
+// -----------------------------------------------------------------------------
+static char *
+strlwr (char * str) {
+  char * p = str;
+
+  while (*p) {
+    *p = tolower (*p);
+    p++;
+  }
+  return str;
+}
+
+#endif /* _MSC_VER not defined */
 
 /* main ===================================================================== */
 
@@ -1135,7 +1150,7 @@ void
 vHello (void) {
   printf ("%s %s - FieldTalk(tm) Modbus(R) Master Simulator\n",
           basename (progname), VERSION_SHORT);
-  printf ("Copyright © 2015 %s\n"
+  printf ("Copyright (c) 2015 %s\n"
           "All rights reserved.\n"
           "This software is governed by the CeCILL license <http://www.cecill.info>\n\n"
           , AUTHORS);
@@ -1165,11 +1180,11 @@ vUsage (FILE * stream, int exit_msg) {
 // -----------------------------------------------------------------------------
 #endif /* CFG_CHIPIO_DEVICE != 0 */
            "  host          Host name or dotted IP address when using ModBus/TCP protocol\n"
-           "  writevalues   List of values to be written. If none specified (default) %s\n"
+           "  writevalues   List of values to be written.\n"
 //          01234567890123456789012345678901234567890123456789012345678901234567890123456789
-           "                reads data. If negative numbers are provided, it will precede\n"
-           "                the list of data to be written by two dashes ('--').\n"
-           "                for example : \n"
+           "                If none specified (default) %s reads data.\n"
+           "                If negative numbers are provided, it will precede the list of\n"
+           "                data to be written by two dashes ('--'). for example :\n"
            "                %s -t4:int /dev/ttyUSB0 -- 123 -1568 8974 -12\n"
            , sMyName
            , sMyName);
@@ -1291,21 +1306,6 @@ vCheckDoubleRange (const char * sName, double d, double min, double max) {
     vSyntaxErrorExit ("%s out of range (%g)", sName, d);
   }
 }
-
-#if ! defined(_MSC_VER)
-
-// -----------------------------------------------------------------------------
-char *
-strlwr (char * str) {
-  char * p = str;
-
-  while (*p) {
-    *p = tolower (*p);
-    p++;
-  }
-  return str;
-}
-#endif
 
 // -----------------------------------------------------------------------------
 int

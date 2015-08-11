@@ -28,7 +28,7 @@ ChangesAssociations=yes
 ChangesEnvironment=true
 
 [Languages]
-Name: en; MessagesFile: compiler:Default.isl; LicenseFile: license.rtf
+Name: en; MessagesFile: compiler:Default.isl; LicenseFile: license.txt
 
 [CustomMessages]
 en.MainFiles=MBPoll
@@ -46,7 +46,7 @@ Name: modifypath; Description: Add application directory to your environmental p
 
 [Files]
 Source: app\*; DestDir: {app}; Flags: ignoreversion recursesubdirs createallsubdirs; Components: main
-Source: license*.rtf; DestDir: {app}; Flags: ignoreversion recursesubdirs createallsubdirs; Components: main
+Source: license*.txt; DestDir: {app}; Flags: ignoreversion recursesubdirs createallsubdirs; Components: main
 Source: mbpoll.ico; DestDir: {app}; Flags: ignoreversion recursesubdirs createallsubdirs; Components: main
 Source: src\*; DestDir: {app}\src; Flags: ignoreversion recursesubdirs createallsubdirs; Components: source
 Source: tmp\vcredist_x86.exe; DestDir: {tmp}; Flags: deleteafterinstall

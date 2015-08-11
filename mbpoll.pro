@@ -35,7 +35,7 @@ win32 {
   DEFINES += _WINSOCK_DEPRECATED_NO_WARNINGS
   DEFINES += _CRT_SECURE_NO_WARNINGS
   LIBS += -lsetupapi -lwsock32 -lws2_32
-  INSTALLBASE = bin
+  INSTALLBASE = package/win/app
   INSTALLBIN  = $$INSTALLBASE
   distclean_dirs ~= s,/,\\,g
   QMAKE_DEL_FILE = DEL /S /Q
