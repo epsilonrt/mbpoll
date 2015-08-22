@@ -65,13 +65,13 @@
   <VirtualDirectory Name="mbpoll">
     <File Name="NEWS"/>
     <File Name="mbpoll.pro"/>
-    <File Name="README"/>
     <File Name="INSTALL"/>
     <File Name="version-git.h"/>
     <File Name="LICENCE"/>
     <File Name="AUTHORS"/>
     <File Name="TODO"/>
     <File Name="LICENSE"/>
+    <File Name="README.md"/>
   </VirtualDirectory>
   <Settings Type="Executable">
     <GlobalSettings>
