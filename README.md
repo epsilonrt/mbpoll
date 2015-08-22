@@ -3,6 +3,7 @@
 > Copyright © 2015 Pascal JEAN aka epsilonRT  
 > pascal.jean--AT--btssn.net
 
+
 ## Présentation
 mbpoll est un utilitaire en ligne de commande permettant de dialoguer
 avec des esclaves ModBus RTU ou TCP.  
