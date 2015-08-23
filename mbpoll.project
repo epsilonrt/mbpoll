@@ -72,6 +72,7 @@
     <File Name="TODO"/>
     <File Name="LICENSE"/>
     <File Name="README.md"/>
+    <File Name="README_FR.md"/>
   </VirtualDirectory>
   <Settings Type="Executable">
     <GlobalSettings>
