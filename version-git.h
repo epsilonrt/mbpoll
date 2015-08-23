@@ -1,6 +1,6 @@
-#define VERSION "0.1-10-gae51499"
-#define VERSION_SHORT "0.1-10"
+#define VERSION "0.1-17-g1b23a34"
+#define VERSION_SHORT "0.1-17"
 #define VERSION_MAJOR 0
 #define VERSION_MINOR 1
-#define VERSION_PATCH 10
-#define VERSION_SHA1 0xae51499
+#define VERSION_PATCH 17
+#define VERSION_SHA1 0x1b23a34
