@@ -328,9 +328,9 @@ next:
 static char *
 index (const char *s, int c) {
 
-  while ((s) && (*s)) {
+  while ( (s) && (*s)) {
     if (c == *s) {
-      return (char *)s;
+      return (char *) s;
     }
     s++;
   }
@@ -866,10 +866,20 @@ vPrintReadValues (int iAddr, int iCount, xMbPollContext * ctx) {
         iAddr++;
         break;
 
-      case eFormatDec:
-        printf ("%u", DUINT16 (ctx->pvData, i));
+      case eFormatDec: {
+        uint16_t v = DUINT16 (ctx->pvData, i);
+        if (v & 0x8000) {
+
+          printf ("%u (%d)", v, (int) (int16_t) v);
+        }
+        else {
+
+          printf ("%u", v);
+        }
         iAddr++;
-        break;
+
+      }
+      break;
 
       case eFormatHex:
         printf ("0x%04X", DUINT16 (ctx->pvData, i));
