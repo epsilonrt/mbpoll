@@ -1,7 +1,7 @@
 ; Copyright © 2015 Pascal JEAN aka epsilonRT
 ; All rights reserved.
 
-#define VERSION "0.1-10"
+#define VERSION "0.1-19-ge00e908"
 [Setup]
 ; NOTE: The value of AppId uniquely identifies this application.
 ; Do not use the same AppId value in installers for other applications.

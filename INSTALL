@@ -35,9 +35,14 @@ Sur un système Windows, il faut installer un compilateur Microsoft
 La phase d'installation du compilateur et de Qt étant très longue, il
 est possible d'utiliser le fichier d'installation précompilé.  
 Une fois installé, il faut compiler à partir d'une invite de commande
-Qt 32-bit MSVC (élévation nécessaire pour install) :
+Qt 32-bit MSVC2013 Qt 5.4 :
 
     > cd mbpoll
-    > qmake
+    > md build
+    > cd build
+    > qmake ..
     > nmake
     > nmake install
+
+Pour créer l'installeur, il faut installer Inno Script Studio 2.2 ou supérieur
+puis ouvrir package/win/mbpoll.iss et compiler l'installeur.
