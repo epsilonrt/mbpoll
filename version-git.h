@@ -1,6 +1,6 @@
-#define VERSION "0.1-19-ge00e908"
-#define VERSION_SHORT "0.1-19"
+#define VERSION "0.1-23-g37ab89f"
+#define VERSION_SHORT "0.1-23"
 #define VERSION_MAJOR 0
 #define VERSION_MINOR 1
-#define VERSION_PATCH 19
-#define VERSION_SHA1 0xe00e908
+#define VERSION_PATCH 23
+#define VERSION_SHA1 0x37ab89f
