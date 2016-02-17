@@ -10,7 +10,7 @@ linux ARM (Raspbian).
 
 Sur un système Debian:
 
-    $ sudo apt-get install build-essential
+    $ sudo apt-get install build-essential qt4-make
     $ cd mbpoll
     $ qmake
     $ make

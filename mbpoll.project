@@ -40,10 +40,14 @@
       <File Name="3rdparty/modbus/modbus.h"/>
       <File Name="3rdparty/modbus/modbus-rtu.c"/>
       <File Name="3rdparty/modbus/modbus-rtu-private.h"/>
+      <File Name="3rdparty/modbus/AUTHORS"/>
+      <File Name="3rdparty/modbus/COPYING"/>
+      <File Name="3rdparty/modbus/README.md"/>
     </VirtualDirectory>
     <VirtualDirectory Name="getopt">
       <File Name="3rdparty/getopt/getopt.h"/>
       <File Name="3rdparty/getopt/getopt.c"/>
+      <File Name="3rdparty/getopt/COPYING"/>
     </VirtualDirectory>
     <VirtualDirectory Name="sysio">
       <File Name="3rdparty/sysio/delay.h"/>

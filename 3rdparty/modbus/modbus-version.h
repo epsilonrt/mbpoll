@@ -33,7 +33,7 @@
 
 /* The full version, in string form (suited for string concatenation)
  */
-#define LIBMODBUS_VERSION_STRING "3.1.2"
+#define LIBMODBUS_VERSION_STRING "3.1.2-epsilonrt"
 
 /* Numerically encoded version, like 0x010203 */
 #define LIBMODBUS_VERSION_HEX ((LIBMODBUS_VERSION_MAJOR << 24) |  \

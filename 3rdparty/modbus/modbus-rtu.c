@@ -910,13 +910,29 @@ int modbus_rtu_set_serial_mode(modbus_t *ctx, int mode)
         struct serial_rs485 rs485conf;
         memset(&rs485conf, 0x0, sizeof(struct serial_rs485));
 
-        if (mode == MODBUS_RTU_RS485) {
+        /*
+         * pascal.jean@btssn.net aka epsilonrt
+         * 2016.02.17
+         * start
+         */
+        if ( (mode == MODBUS_RTU_RS485) || 
+              (mode == MODBUS_RTU_RS485_RTS_ON_SEND) ) {
             rs485conf.flags = SER_RS485_ENABLED;
-            if (ioctl(ctx->s, TIOCSRS485, &rs485conf) < 0) {
+            if (mode == MODBUS_RTU_RS485) {
+                rs485conf.flags |= SER_RS485_RTS_AFTER_SEND;
+            } else {
+                rs485conf.flags |= SER_RS485_RTS_ON_SEND;
+            }
+            if (ioctl (ctx->s, TIOCSRS485, &rs485conf) < 0) {
                 return -1;
             }
 
-            ctx_rtu->serial_mode = MODBUS_RTU_RS485;
+            ctx_rtu->serial_mode = mode;
+            /*
+             * end
+             * pascal.jean@btssn.net aka epsilonrt
+             * 2016.02.17
+             */
             return 0;
         } else if (mode == MODBUS_RTU_RS232) {
             /* Turn off RS485 mode only if required */

@@ -186,7 +186,7 @@ typedef struct xMbPollContext {
   eSerialParity eRtuParity;
   bool bIsVerbose;
   bool bIsPolling;
-  bool bIsRs485;
+  int  iRtuMode;
   bool bIsWrite;
   bool bIsReportSlaveID;
   bool bIsDefaultMode;
@@ -227,7 +227,7 @@ static xMbPollContext ctx = {
   .bIsVerbose = false,
   .bIsPolling = true,
   .bIsReportSlaveID = false,
-  .bIsRs485 = false,
+  .iRtuMode = MODBUS_RTU_RS232,
   .bIsWrite = true,
   .bIsDefaultMode = true,
   .iPduOffset = 1,
@@ -415,7 +415,11 @@ main (int argc, char **argv) {
         break;
 
       case '4':
-        ctx.bIsRs485 = true;
+        ctx.iRtuMode = MODBUS_RTU_RS485;
+        break;
+
+      case '5':
+        ctx.iRtuMode = MODBUS_RTU_RS485_RTS_ON_SEND;
         break;
 
       case '0':
@@ -682,9 +686,9 @@ main (int argc, char **argv) {
   modbus_set_debug (ctx.xBus, ctx.bIsVerbose);
 
   vHello();
-  if (ctx.bIsRs485) {
-
-    modbus_rtu_set_serial_mode (ctx.xBus, MODBUS_RTU_RS485);
+  if ((ctx.iRtuMode != MODBUS_RTU_RS232) && (ctx.eMode == eModeRtu)) {
+    printf ("Rtu mode=%d\n", ctx.iRtuMode);
+    modbus_rtu_set_serial_mode (ctx.xBus, ctx.iRtuMode);
   }
 
   // Connection au bus
@@ -1231,7 +1235,8 @@ vUsage (FILE * stream, int exit_msg) {
            "  -d #          Databits (7 or 8, %s for RTU)\n"
            "  -s #          Stopbits (1 or 2, %s is default)\n"
            "  -P #          Parity (none, even, odd, %s is default)\n"
-           "  -4            RS-485 mode\n"
+           "  -4            RS-485 mode (/RTS on after sending)\n"
+           "  -5            RS-485 mode (/RTS on when sending)\n"
 #ifdef USE_CHIPIO
 // -----------------------------------------------------------------------------
            "Options for ModBus RTU for ChipIo serial port : \n"

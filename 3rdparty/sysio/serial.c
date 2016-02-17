@@ -21,8 +21,8 @@ static const char sNone[] = "none";
 const char *
 sSerialAttrToStr (const xSerialIos * xIos) {
   // BBBBBBBB-DPSF
-  static char str[14];
-  snprintf (str, 14, "%d-%d%c%d%c",
+  static char str[16];
+  snprintf (str, 16, "%10ld-%1d%c%1d%c",
             xIos->baud,
             xIos->dbits,
             xIos->parity,
@@ -43,6 +43,10 @@ sSerialFlowToStr (eSerialFlow eFlow) {
       return "hardware";
     case SERIAL_FLOW_XONXOFF:
       return "software";
+    case SERIAL_FLOW_RS485_RTS_AFTER_SEND:
+      return "rs485 rts after send";
+    case SERIAL_FLOW_RS485_RTS_ON_SEND:
+      return "rs485 rts on send";
     default:
       break;
   }

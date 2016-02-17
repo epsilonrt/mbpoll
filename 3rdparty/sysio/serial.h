@@ -65,12 +65,16 @@ typedef enum {
 /**
  * @enum eSerialFlow
  * @brief Type de contrôle de flux
+ * 
+ * @warning Les modes RS485 ne sont pas gérés par termios (spécifiques à linux)
  */
 typedef enum {
 
-  SERIAL_FLOW_NONE = ' ',
-  SERIAL_FLOW_RTSCTS = 'H',
-  SERIAL_FLOW_XONXOFF = 'S',
+  SERIAL_FLOW_NONE = ' ', /**< Pas de contrôle de flux */
+  SERIAL_FLOW_RTSCTS = 'H', /**< Contrôle de flux matériel RTS/CTS */
+  SERIAL_FLOW_XONXOFF = 'S', /**< Contrôle de flux logiciel XON/XOFF */
+  SERIAL_FLOW_RS485_RTS_AFTER_SEND = 'R', /**< RS485 half-duplex, RTS au niveau logique 0 après transmission */
+  SERIAL_FLOW_RS485_RTS_ON_SEND = 'r', /**< RS485 half-duplex, RTS au niveau logique 0 pendant transmission */
   SERIAL_FLOW_UNKNOWN = -1
 } eSerialFlow;
 
@@ -79,7 +83,7 @@ typedef enum {
  * Configuration d'un port série
  */
 typedef struct xSerialIos {
-  int baud; /**< Vitesse de transmission, négative si erreur */
+  long baud; /**< Vitesse de transmission, négative si erreur */
   eSerialDataBits dbits; /**< Bits de données */
   eSerialParity parity; /**< Parité */
   eSerialStopBits sbits;/**< Bits de stop */
@@ -101,10 +105,48 @@ typedef struct xSerialIos {
  */
 int iSerialOpen (const char *device, xSerialIos * xIos);
 
+
+/**
+ * Fermeture du port série
+ * 
+ * Equivaut à un appel de close() en ignorant la valeur retournée, il est donc
+ * préférable d'utiliser close() en vérifiant la valeur retournée (c.f. page
+ * man 2 close)!
+ *
+ * @param fd le descripteur de fichier du port
+ */
+void vSerialClose (int fd);
+
+/**
+ *  Vide les buffers de réception et de transmission
+ *
+ * Le buffer de transmission est transmis, celui de réception est vidé.
+ *
+ * @param fd le descripteur de fichier du port
+ */
+void vSerialFlush (int fd);
+
+/**
+ * Retourne le nombre d'octets en attente de lecture
+ *
+ * @param fd le descripteur de fichier du port
+ * @return le nombre d'octets en attente de lecture, -1 si erreur
+ */
+int iSerialDataAvailable (int fd);
+
+/**
+ * Scrutation en réception du port série
+ *
+ * @param fd le descripteur de fichier du port
+ * @param timeout_ms temps d'attente maximal, une valeur négative pour l'infini
+ * @return le nombre d'octets en attente de lecture, -1 si erreur
+ */
+int iSerialPoll (int fd, int timeout_ms);
+
 /**
  * Modification de configuration d'un port série
  * 
- * @param le descripteur de fichier du port
+ * @param fd le descripteur de fichier du port
  * @param xIos configuration du port
  * @return 0, -1 si erreur
  */
@@ -113,7 +155,7 @@ int iSerialSetAttr (int fd, const xSerialIos * xIos);
 /**
  * Lecture de configuration d'un port série
  * 
- * @param le descripteur de fichier du port
+ * @param fd le descripteur de fichier du port
  * @param xIos configuration du port lue
  * @return 0, -1 si erreur
  */
@@ -127,7 +169,7 @@ int iSerialGetAttr (int fd, xSerialIos * xIos);
  * - D Data bits (5, 6, 7 ,8)
  * - P Parité (N, E, O)
  * - S Stop (1, 2)
- * - F Flow (H, S)
+ * - F Flow (H, S, R, r)
  * .
  * @return la représentation de la configuration sous forme de string, NULL si
  * erreur.
@@ -135,28 +177,12 @@ int iSerialGetAttr (int fd, xSerialIos * xIos);
 const char * sSerialAttrToStr (const xSerialIos * xIos);
 
 /**
- *  Fermeture du port série
- *
- * @param le descripteur de fichier du port
+ * @brief Vérifie si le descripteur de fichier est valide
+ * 
+ * @param fd le descripteur de fichier du port
+ * @return true si valide
  */
-void vSerialClose (int fd);
-
-/**
- *  Vide les buffers de réception et de transmission
- *
- * Le buffer de transmission est transmis, celui de réception est vidé.
- *
- * @param le descripteur de fichier du port
- */
-void vSerialFlush (int fd);
-
-/**
- * Retourne le nombre d'octets en attente de lecture
- *
- * @param xPort Pointeur sur le port
- * @return le nombre d'octets en attente de lecture, NULL si erreur
- */
-int iSerialDataAvailable (int fd);
+bool bSerialFdIsValid (int fd);
 
 /**
  *  Lecture de la vitesse de transmission
@@ -241,7 +267,7 @@ int iSerialSetFlow (int fd, eSerialFlow eNewFlow);
 /**
  *  Lecture du type de contrôle de flux en cours sous forme "lisible"
  *
- * @param le descripteur de fichier du port
+ * @param fd le descripteur de fichier du port
  */
 const char * sSerialGetFlowStr (int fd);
 
@@ -253,9 +279,9 @@ const char * sSerialGetFlowStr (int fd);
  * - D Data bits (5, 6, 7 ,8)
  * - P Parité (N, E, O)
  * - S Stop (1, 2)
- * - F Flow (H, S)
+ * - F Flow (H, S, R, r)
  * .
- * @param le descripteur de fichier du port
+ * @param fd le descripteur de fichier du port
  * @return la représentation de la configuration sous forme de string, NULL si
  * erreur.
  */
@@ -306,6 +332,8 @@ int iSerialTermiosSetStopBits (struct termios * ts, eSerialStopBits eStopBits);
 
 /**
  * Modification du contrôle de flux d'une structure termios
+ * La fonction règle ts à SERIAL_FLOW_NONE si un mode RS485 est demandé 
+ * (RS485 non géré par termios).
  */
 int iSerialTermiosSetFlow (struct termios * ts, eSerialFlow eFlow);
 
@@ -331,12 +359,16 @@ int iSerialTermiosGetParity (const struct termios * ts);
 
 /**
  * Contrôle de flux d'une structure termios
+ * La fonction retourne SERIAL_FLOW_NONE si un mode RS485 est en fonction 
+ * (RS485 non géré par termios).
  */
 int iSerialTermiosGetFlow (const struct termios * ts);
 
 /**
  *  Chaîne de caractère correspondant à une structure termios
  *
+ * La fonction affiche SERIAL_FLOW_NONE si un mode RS485 est en fonction 
+ * (RS485 non géré par termios).
  * Le format est BBBBBB-DPSF avec :
  * - BBBBBB Baudrate
  * - D Data bits (5, 6, 7 ,8)
@@ -388,7 +420,7 @@ const char * sSerialStopBitsToStr (eSerialStopBits eStopBits);
 /**
  * Durée d'une trame de ulSize octets en secondes
  *
- * @param le descripteur de fichier du port
+ * @param fd le descripteur de fichier du port
  */
 double dSerialFrameDuration (int fd, size_t ulSize);
 
