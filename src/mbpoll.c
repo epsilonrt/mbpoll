@@ -5,8 +5,7 @@
  *
  * Utilise la bibliothèque libmodbus http://libmodbus.org version >= 3.0
  *
- * Copyright (c) 2015 Pascal JEAN aka epsilonRT <pascal.jean--AT--btssn.net>
- * All rights reserved.
+ * Copyright (c) 2015 epsilonRT, All rights reserved.
  * This software is governed by the CeCILL license <http://www.cecill.info>
  */
 #define _GNU_SOURCE
@@ -29,7 +28,7 @@
 #include "config.h"
 
 /* constants ================================================================ */
-#define AUTHORS "Pascal JEAN aka epsilonRT"
+#define AUTHORS "epsilonRT"
 #define WEBSITE "http://www.btssn.net"
 
 /* conditionals ============================================================= */
@@ -1163,8 +1162,7 @@ void
 vHello (void) {
   printf ("%s %s - FieldTalk(tm) Modbus(R) Master Simulator\n",
           basename (progname), VERSION_SHORT);
-  printf ("Copyright (c) 2015 %s\n"
-          "All rights reserved.\n"
+  printf ("Copyright (c) 2015 %s, All rights reserved.\n"
           "This software is governed by the CeCILL license <http://www.cecill.info>\n\n"
           , AUTHORS);
 }

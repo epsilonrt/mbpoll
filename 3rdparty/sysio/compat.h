@@ -2,8 +2,7 @@
  * @file sysio/compat.h
  * @brief Fonctions de portabilité POSIX, GNU, Microsoft
  *
- * Copyright © 2015 Pascal JEAN aka epsilonRT <pascal.jean--AT--btssn.net>
- * All rights reserved.
+ * Copyright (c) 2015 epsilonRT, All rights reserved.
  * This software is governed by the CeCILL license <http://www.cecill.info>
  */
 

@@ -22,7 +22,7 @@ MODBUS_API modbus_t* modbus_new_rtu(const char *device, int baud, char parity,
 #define MODBUS_RTU_RS232 0
 #define MODBUS_RTU_RS485 1
 /*
- * pascal.jean@btssn.net aka epsilonrt
+ * epsilonrt
  * 2016.02.17
  * start
  */
@@ -32,7 +32,7 @@ MODBUS_API modbus_t* modbus_new_rtu(const char *device, int baud, char parity,
 #define MODBUS_RTU_RS485_RTS_ON_SEND 2
 /*
  * end
- * pascal.jean@btssn.net aka epsilonrt
+ * epsilonrt
  * 2016.02.17
  */
 

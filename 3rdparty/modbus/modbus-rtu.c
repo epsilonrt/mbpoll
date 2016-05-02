@@ -911,7 +911,7 @@ int modbus_rtu_set_serial_mode(modbus_t *ctx, int mode)
         memset(&rs485conf, 0x0, sizeof(struct serial_rs485));
 
         /*
-         * pascal.jean@btssn.net aka epsilonrt
+         * epsilonrt
          * 2016.02.17
          * start
          */
@@ -930,7 +930,7 @@ int modbus_rtu_set_serial_mode(modbus_t *ctx, int mode)
             ctx_rtu->serial_mode = mode;
             /*
              * end
-             * pascal.jean@btssn.net aka epsilonrt
+             * epsilonrt
              * 2016.02.17
              */
             return 0;

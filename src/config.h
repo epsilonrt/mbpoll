@@ -2,8 +2,7 @@
  * @file config.h
  * @brief mbpoll config file
  *
- * Copyright © 2015 Pascal JEAN aka epsilonRT <pascal.jean--AT--btssn.net>
- * All rights reserved.
+ * Copyright (c) 2015 epsilonRT, All rights reserved.
  * This software is governed by the CeCILL license <http://www.cecill.info>
  */
 #ifndef _CONFIG_H_

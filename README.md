@@ -1,7 +1,6 @@
 # mbpoll
 
-> Copyright © 2015 Pascal JEAN aka epsilonRT  
-> pascal.jean--AT--btssn.net
+> Copyright © 2015 epsilonRT, All rights reserved.  
 
 
 ## Presentation
@@ -37,8 +36,7 @@ slave at address 33 connected through RTU /dev/ttyUSB2 (38400 Bd)
     mbpoll -a 33 -b 38400 -t 3 -r 1 -c 2 /dev/ttyUSB2
     
     mbpoll 0.1-10 - FieldTalk(tm) Modbus(R) Master Simulator
-    Copyright (c) 2015 Pascal JEAN aka epsilonRT
-    All rights reserved.
+    Copyright (c) 2015 epsilonRT, All rights reserved.
     This software is governed by the CeCILL license <http://www.cecill.info>
 
     Protocol configuration: Modbus RTU

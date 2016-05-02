@@ -1,5 +1,4 @@
-; Copyright © 2015 Pascal JEAN aka epsilonRT
-; All rights reserved.
+; Copyright Â© 2015 epsilonRT, All rights reserved.
 
 #define VERSION "0.1-19-ge00e908"
 [Setup]
