@@ -29,7 +29,7 @@
 
 /* constants ================================================================ */
 #define AUTHORS "epsilonRT"
-#define WEBSITE "http://www.btssn.net"
+#define WEBSITE "http://www.epsilonrt.com"
 
 /* conditionals ============================================================= */
 #if defined(__GNUC__) && __SIZEOF_FLOAT__ != 4 && !defined (__STDC_IEC_559__)
@@ -159,6 +159,8 @@ static const char sUnknownStr[] = "unknown";
 static const char sIntStr[] = "32-bit integer";
 static const char sFloatStr[] = "32-bit float";
 static const char sWordStr[] = "16-bit register";
+static const char sLittleEndianStr[] = "(little endian)";
+static const char sBigEndianStr[] = "(big endian)";
 static char * progname;
 
 /* structures =============================================================== */
@@ -191,6 +193,7 @@ typedef struct xMbPollContext {
   bool bIsDefaultMode;
   int iPduOffset;
   bool bIsChipIo;
+  bool bIsBigEndian;
 
   // Variables de travail
   modbus_t * xBus;
@@ -232,6 +235,7 @@ static xMbPollContext ctx = {
   .bIsDefaultMode = true,
   .iPduOffset = 1,
   .bIsChipIo = false,
+  .bIsBigEndian = false,
 
   // Variables de travail
   .xBus = NULL,
@@ -257,11 +261,11 @@ static xChipIoSerial * xChipSerial;
 static const char sChipIoSlaveAddrStr[] = "chipio slave address";
 static const char sChipIoIrqPinStr[] = "chipio irq pin";
 // option -i et -n supplémentaires pour chipio
-static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u04hVvi:n:";
+static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u04hVvBi:n:";
 
 #else /* USE_CHIPIO == 0 */
 /* constants ================================================================ */
-static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u04hVv";
+static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u04hVvB";
 // -----------------------------------------------------------------------------
 #endif /* USE_CHIPIO == 0 */
 
@@ -291,6 +295,8 @@ const char * sEnumToStr (int iElmt, const int * iList,
 const char * sFunctionToStr (eFunctions eFunction);
 const char * sModeToStr (eModes eMode);
 void vSigIntHandler (int sig);
+float fSwapFloat (float f);
+int32_t lSwapLong (int32_t l);
 
 #if defined(_MSC_VER)
 // Portage des fonctions POSIX ou GNU
@@ -314,7 +320,7 @@ strcasestr (const char *haystack, const char *needle) {
     for (j = 0; j < nlen; j++) {
       unsigned char c1 = haystack[i + j];
       unsigned char c2 = needle[j];
-      if (toupper (c1) != toupper (c2) ) {
+      if (toupper (c1) != toupper (c2)) {
         goto next;
       }
     }
@@ -329,7 +335,7 @@ next:
 static char *
 index (const char *s, int c) {
 
-  while ( (s) && (*s) ) {
+  while ( (s) && (*s)) {
     if (c == *s) {
       return (char *) s;
     }
@@ -376,7 +382,7 @@ main (int argc, char **argv) {
 
       case 'm':
         ctx.eMode = iGetEnum (sModeStr, optarg, sModeList,
-                              iModeList, SIZEOF_ILIST (iModeList) );
+                              iModeList, SIZEOF_ILIST (iModeList));
         ctx.bIsDefaultMode = false;
         break;
 
@@ -399,11 +405,11 @@ main (int argc, char **argv) {
       case 't':
         ctx.eFunction = iGetInt (sFunctionStr, optarg, 0);
         vCheckEnum (sFunctionStr, ctx.eFunction,
-                    iFunctionList, SIZEOF_ILIST (iFunctionList) );
+                    iFunctionList, SIZEOF_ILIST (iFunctionList));
         p = index (optarg, ':');
         if (p) {
           ctx.eFormat = iGetEnum (sFormatStr, p + 1, sFormatList, iFormatList,
-                                  SIZEOF_ILIST (iFormatList) );
+                                  SIZEOF_ILIST (iFormatList));
         }
         break;
 
@@ -413,6 +419,10 @@ main (int argc, char **argv) {
 
       case '1':
         ctx.bIsPolling = false;
+        break;
+
+      case 'B':
+        ctx.bIsBigEndian = true;
         break;
 
       case '4':
@@ -453,15 +463,15 @@ main (int argc, char **argv) {
         break;
       case 'd':
         ctx.xRtu.dbits = iGetEnum (sRtuDatabitsStr, optarg, sDatabitsList,
-                                   iDatabitsList, SIZEOF_ILIST (iDatabitsList) );
+                                   iDatabitsList, SIZEOF_ILIST (iDatabitsList));
         break;
       case 's':
         ctx.xRtu.sbits = iGetEnum (sRtuStopbitsStr, optarg, sStopbitsList,
-                                   iStopbitsList, SIZEOF_ILIST (iStopbitsList) );
+                                   iStopbitsList, SIZEOF_ILIST (iStopbitsList));
         break;
       case 'P':
         ctx.xRtu.parity = iGetEnum (sRtuParityStr, optarg, sParityList,
-                                    iParityList, SIZEOF_ILIST (iParityList) );
+                                    iParityList, SIZEOF_ILIST (iParityList));
         break;
 
 #ifdef USE_CHIPIO
@@ -509,7 +519,7 @@ main (int argc, char **argv) {
   }
 
   // Coils et Discrete inputs toujours en binaire
-  if ( (ctx.eFunction == eFuncCoil) || (ctx.eFunction == eFuncDiscreteInput) ) {
+  if ( (ctx.eFunction == eFuncCoil) || (ctx.eFunction == eFuncDiscreteInput)) {
 
     ctx.eFormat = eFormatBin;
   }
@@ -522,7 +532,7 @@ main (int argc, char **argv) {
   ctx.sDevice = argv[optind];
 
   if ( (strcasestr (ctx.sDevice, "com") || strcasestr (ctx.sDevice, "tty") ||
-        strcasestr (ctx.sDevice, "ser") ) && ctx.bIsDefaultMode) {
+        strcasestr (ctx.sDevice, "ser")) && ctx.bIsDefaultMode) {
 
     // Mode par défaut si port série
     ctx.eMode = eModeRtu;
@@ -568,7 +578,7 @@ main (int argc, char **argv) {
 #endif /* USE_CHIPIO defined */
   PDEBUG ("Set device=%s", ctx.sDevice);
 
-  if ( (ctx.bIsReportSlaveID) && (ctx.eMode != eModeRtu) ) {
+  if ( (ctx.bIsReportSlaveID) && (ctx.eMode != eModeRtu)) {
 
     vSyntaxErrorExit ("-u is available only in RTU mode");
   }
@@ -613,27 +623,27 @@ main (int argc, char **argv) {
             iValue = iGetInt (sDataStr, argv[arg], 10);
             vCheckIntRange (sDataStr, iValue, 0, 1);
             DUINT8 (ctx.pvData, i) = (uint8_t) iValue;
-            PDEBUG ("Byte[%d]=%d", i, DUINT8 (ctx.pvData, i) );
+            PDEBUG ("Byte[%d]=%d", i, DUINT8 (ctx.pvData, i));
             break;
             break;
 
           case eFuncHoldingReg:
             if (ctx.eFormat == eFormatInt) {
-              DINT32 (ctx.pvData, i) = iGetInt (sDataStr, argv[arg], 10);
-              PDEBUG ("Int[%d]=%i", i, DINT32 (ctx.pvData, i) );
+              DINT32 (ctx.pvData, i) = lSwapLong (iGetInt (sDataStr, argv[arg], 10));
+              PDEBUG ("Int[%d]=%l", i, lSwapLong (DINT32 (ctx.pvData, i)));
             }
             else if (ctx.eFormat == eFormatFloat) {
               dValue = dGetDouble (sDataStr, argv[arg]);
               PDEBUG ("%g,%g\n", FLT_MIN, FLT_MAX);
               vCheckDoubleRange (sDataStr, dValue, -FLT_MAX, FLT_MAX);
-              DFLOAT (ctx.pvData, i) = (float) dValue;
-              PDEBUG ("Float[%d]=%g", i, DFLOAT (ctx.pvData, i) );
+              DFLOAT (ctx.pvData, i) = fSwapFloat ( (float) dValue);
+              PDEBUG ("Float[%d]=%g", i, fSwapFloat (DFLOAT (ctx.pvData, i)));
             }
             else {
               iValue = iGetInt (sDataStr, argv[arg], 0);
               vCheckIntRange (sDataStr, iValue, 0, UINT16_MAX);
               DUINT16 (ctx.pvData, i) = (uint16_t) iValue;
-              PDEBUG ("Word[%d]=0x%X", i, DUINT16 (ctx.pvData, i) );
+              PDEBUG ("Word[%d]=0x%X", i, DUINT16 (ctx.pvData, i));
             }
             break;
 
@@ -644,13 +654,13 @@ main (int argc, char **argv) {
     }
   }
 
-  if ( (ctx.iSlaveCount > 1) && ( (ctx.bIsWrite) || (ctx.bIsReportSlaveID) ) ) {
+  if ( (ctx.iSlaveCount > 1) && ( (ctx.bIsWrite) || (ctx.bIsReportSlaveID))) {
     vSyntaxErrorExit ("You can give a slave address list only for reading");
   }
 
   if (ctx.iSlaveCount == -1) {
 
-    ctx.piSlaveAddr = malloc (sizeof (int) );
+    ctx.piSlaveAddr = malloc (sizeof (int));
     assert (ctx.piSlaveAddr);
     ctx.piSlaveAddr[0] = DEFAULT_SLAVEADDR;
     ctx.iSlaveCount = 1;
@@ -692,7 +702,7 @@ main (int argc, char **argv) {
   if (modbus_connect (ctx.xBus) == -1) {
 
     modbus_free (ctx.xBus);
-    vIoErrorExit ("Connection failed: %s", modbus_strerror (errno) );
+    vIoErrorExit ("Connection failed: %s", modbus_strerror (errno));
   }
 
   if ( (ctx.iRtuMode != MODBUS_RTU_RS232) && (ctx.eMode == eModeRtu) &&
@@ -726,7 +736,7 @@ main (int argc, char **argv) {
     vPrintConfig (&ctx);
 
     // int32 et float utilisent 2 registres 16 bits
-    iNbReg = ( (ctx.eFormat == eFormatInt) || (ctx.eFormat == eFormatFloat) ) ?
+    iNbReg = ( (ctx.eFormat == eFormatInt) || (ctx.eFormat == eFormatFloat)) ?
              ctx.iCount * 2 : ctx.iCount;
     // libmodbus utilise les adresses PDU !
     iStartReg = ctx.iStartRef - ctx.iPduOffset;
@@ -747,7 +757,7 @@ main (int argc, char **argv) {
 
               // Ecriture d'un seul bit
               iRet = modbus_write_bit (ctx.xBus, iStartReg,
-                                       DUINT8 (ctx.pvData, 0) );
+                                       DUINT8 (ctx.pvData, 0));
             }
             else {
 
@@ -761,7 +771,7 @@ main (int argc, char **argv) {
 
               // Ecriture d'un seul registre
               iRet = modbus_write_register (ctx.xBus, iStartReg,
-                                            DUINT16 (ctx.pvData, 0) );
+                                            DUINT16 (ctx.pvData, 0));
             }
             else {
 
@@ -781,7 +791,7 @@ main (int argc, char **argv) {
         else {
           ctx.iErrorCount++;
           fprintf (stderr, "Write %s failed: %s\n",
-                   sFunctionToStr (ctx.eFunction), modbus_strerror (errno) );
+                   sFunctionToStr (ctx.eFunction), modbus_strerror (errno));
         }
         // Fin écriture --------------------------------------------------------
       }
@@ -838,7 +848,7 @@ main (int argc, char **argv) {
             ctx.iErrorCount++;
             fprintf (stderr, "Read %s failed: %s\n",
                      sFunctionToStr (ctx.eFunction),
-                     modbus_strerror (errno) );
+                     modbus_strerror (errno));
           }
           if (ctx.bIsPolling) {
 
@@ -889,17 +899,17 @@ vPrintReadValues (int iAddr, int iCount, xMbPollContext * ctx) {
       break;
 
       case eFormatHex:
-        printf ("0x%04X", DUINT16 (ctx->pvData, i) );
+        printf ("0x%04X", DUINT16 (ctx->pvData, i));
         iAddr++;
         break;
 
       case eFormatInt:
-        printf ("%d", DINT32 (ctx->pvData, i) );
+        printf ("%d", lSwapLong (DINT32 (ctx->pvData, i)));
         iAddr += 2;
         break;
 
       case eFormatFloat:
-        printf ("%g", DFLOAT (ctx->pvData, i) );
+        printf ("%g", fSwapFloat (DFLOAT (ctx->pvData, i)));
         iAddr += 2;
         break;
 
@@ -928,7 +938,7 @@ vReportSlaveID (const xMbPollContext * ctx) {
   if (iRet < 0) {
 
     fprintf (stderr, "Report slave ID failed(%d): %s\n", iRet,
-             modbus_strerror (errno) );
+             modbus_strerror (errno));
   }
   else {
 
@@ -949,7 +959,7 @@ vReportSlaveID (const xMbPollContext * ctx) {
         printf ("Data  : ");
         for (i = 2; i < (iLen + 2); i++) {
 
-          if (isprint (ucReport[i]) ) {
+          if (isprint (ucReport[i])) {
 
             putchar (ucReport[i]);
           }
@@ -1031,10 +1041,10 @@ vPrintConfig (const xMbPollContext * ctx) {
 
     case eFuncInputReg:
       if (ctx->eFormat == eFormatInt) {
-        printf ("%s", sIntStr);
+        printf ("%s %s", sIntStr, ctx->bIsBigEndian ? sBigEndianStr : sLittleEndianStr);
       }
       else if (ctx->eFormat == eFormatFloat) {
-        printf ("%s", sFloatStr);
+        printf ("%s %s", sFloatStr, ctx->bIsBigEndian ? sBigEndianStr : sLittleEndianStr);
       }
       else {
         printf ("%s", sWordStr);
@@ -1044,10 +1054,10 @@ vPrintConfig (const xMbPollContext * ctx) {
 
     case eFuncHoldingReg:
       if (ctx->eFormat == eFormatInt) {
-        printf ("%s", sIntStr);
+        printf ("%s %s", sIntStr, ctx->bIsBigEndian ? sBigEndianStr : sLittleEndianStr);
       }
       else if (ctx->eFormat == eFormatFloat) {
-        printf ("%s", sFloatStr);
+        printf ("%s %s", sFloatStr, ctx->bIsBigEndian ? sBigEndianStr : sLittleEndianStr);
       }
       else {
         printf ("%s", sWordStr);
@@ -1076,7 +1086,7 @@ vAllocate (xMbPollContext * ctx) {
 
     case eFuncInputReg:
     case eFuncHoldingReg:
-      if ( (ctx->eFormat == eFormatInt) || (ctx->eFormat == eFormatFloat) ) {
+      if ( (ctx->eFormat == eFormatInt) || (ctx->eFormat == eFormatFloat)) {
         // Registres 32-bits
         ulDataSize *= 4;
       }
@@ -1097,7 +1107,7 @@ vAllocate (xMbPollContext * ctx) {
 void
 vSigIntHandler (int sig) {
 
-  if ( (ctx.bIsPolling) && (!ctx.bIsWrite) ) {
+  if ( (ctx.bIsPolling) && (!ctx.bIsWrite)) {
 
     printf ("--- %s poll statistics ---\n"
             "%d frames transmitted, %d received, %d errors, %.1f%% frame loss\n",
@@ -1227,6 +1237,7 @@ vUsage (FILE * stream, int exit_msg) {
            "  -t 4:float    32-bit float data type in output (holding) register table\n"
 #endif
            "  -0            First reference is 0 (PDU addressing) instead 1\n"
+           "  -B            Big endian word order for 32-bit integer and float\n"
            "  -1            Poll only once only, otherwise every poll rate interval\n"
            "  -l #          Poll rate in ms, ( > %d, %d is default)\n"
            "  -o #          Time-out in seconds (%.2f - %.2f, %.2f s is default)\n"
@@ -1303,7 +1314,7 @@ vCheckEnum (const char * sName, int iElmt, const int * iList, int iSize) {
 void
 vCheckIntRange (const char * sName, int i, int min, int max) {
 
-  if ( (i < min) || (i > max) ) {
+  if ( (i < min) || (i > max)) {
 
     vSyntaxErrorExit ("%s out of range (%d)", sName, i);
   }
@@ -1313,7 +1324,7 @@ vCheckIntRange (const char * sName, int i, int min, int max) {
 void
 vCheckDoubleRange (const char * sName, double d, double min, double max) {
 
-  if ( (d < min) || (d > max) ) {
+  if ( (d < min) || (d > max)) {
 
     vSyntaxErrorExit ("%s out of range (%g)", sName, d);
   }
@@ -1328,7 +1339,7 @@ iGetEnum (const char * sName, char * sElmt, const char ** psStrList,
 
     if (strcasecmp (sElmt, psStrList[i]) == 0) {
 
-      PDEBUG ("Set %s=%s", sName, strlwr (sElmt) );
+      PDEBUG ("Set %s=%s", sName, strlwr (sElmt));
       return iList[i];
     }
   }
@@ -1354,7 +1365,7 @@ sEnumToStr (int iElmt, const int * iList, const char ** psStrList, int iSize) {
 const char *
 sModeToStr (eModes eMode) {
 
-  return sEnumToStr (eMode, iModeList, sModeList, SIZEOF_ILIST (iModeList) );
+  return sEnumToStr (eMode, iModeList, sModeList, SIZEOF_ILIST (iModeList));
 }
 
 // -----------------------------------------------------------------------------
@@ -1362,7 +1373,7 @@ const char *
 sFunctionToStr (eFunctions eFunction) {
 
   return sEnumToStr (eFunction, iFunctionList, sFunctionList,
-                     SIZEOF_ILIST (iFunctionList) );
+                     SIZEOF_ILIST (iFunctionList));
 }
 
 // -----------------------------------------------------------------------------
@@ -1372,7 +1383,7 @@ vPrintIntList (int * iList, int iLen) {
   putchar ('[');
   for (i = 0; i < iLen; i++) {
     printf ("%d", iList[i]);
-    if (i != (iLen - 1) ) {
+    if (i != (iLen - 1)) {
       putchar (',');
     }
     else {
@@ -1416,7 +1427,7 @@ iGetIntList (const char * name, const char * sList, int * iLen) {
       iFirst = i;
       bIsLast = true;
     }
-    else if ( (*p == ',') || (*p == 0) ) {
+    else if ( (*p == ',') || (*p == 0)) {
 
       if (bIsLast) {
         int iRange, iLast;
@@ -1450,7 +1461,7 @@ iGetIntList (const char * name, const char * sList, int * iLen) {
     int iIndex = 0;
 
     // Allocation
-    iList = calloc (iCount, sizeof (int) );
+    iList = calloc (iCount, sizeof (int));
 
     // Affectation
     p = sList;
@@ -1465,7 +1476,7 @@ iGetIntList (const char * name, const char * sList, int * iLen) {
         iFirst = i;
         bIsLast = true;
       }
-      else if ( (*p == ',') || (*p == 0) ) {
+      else if ( (*p == ',') || (*p == 0)) {
 
         if (bIsLast) {
 
@@ -1529,6 +1540,36 @@ dGetDouble (const char * name, const char * num) {
 
   PDEBUG ("Set %s=%g", name, d);
   return d;
+}
+
+// -----------------------------------------------------------------------------
+float
+fSwapFloat (float f) {
+  float ret = f;
+
+  if (ctx.bIsBigEndian) {
+
+    uint16_t *in = (uint16_t *) &f;
+    uint16_t *out = (uint16_t *) &ret;
+    out[0] = in[1];
+    out[1] = in[0];
+  }
+  return ret;
+}
+
+// -----------------------------------------------------------------------------
+int32_t
+lSwapLong (int32_t l) {
+  int32_t ret = l;
+
+  if (ctx.bIsBigEndian) {
+
+    uint16_t *in = (uint16_t *) &l;
+    uint16_t *out = (uint16_t *) &ret;
+    out[0] = in[1];
+    out[1] = in[0];
+  }
+  return ret;
 }
 
 /* ========================================================================== */
