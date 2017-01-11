@@ -26,6 +26,47 @@ floating single precision.
 
 The installation instructions are in the INSTALL file.
 
+For example, for a debian system:
+
+* Install dependencies:
+
+        sudo apt-get update
+        sudo apt-get install qt4-qmake qt4-dev-tools build-essential
+
+* Check the version of qmake (must be 2.X) :
+
+        qmake -v
+          QMake version 2.01a
+          Using Qt version 4.8.6 in /usr/lib/arm-linux-gnueabihf
+
+  If the version is 3.X is that you have QT5, you must select QT4:
+
+        qtchooser -l
+          4
+          5
+          default
+          qt4-arm-linux-gnueabihf
+          qt4
+          qt5-arm-linux-gnueabihf
+          qt5
+        qtchooser -print-env
+          QT_SELECT="default"
+          QTTOOLDIR="/usr/lib/arm-linux-gnueabihf/qt5/bin"
+          QTLIBDIR="/usr/lib/arm-linux-gnueabihf"
+        export QT_SELECT="qt4"
+        qmake -v
+          QMake version 2.01a
+          Using Qt version 4.8.6 in /usr/lib/arm-linux-gnueabihf
+
+* Build and install mbpoll :
+
+        cd mbpoll
+        qmake
+        make
+        sudo make install
+
+That's all !
+
 ## Examples
 
 The following command is used to read the input registers 1 and 2 of the

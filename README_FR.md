@@ -25,6 +25,47 @@ hexadécimal ou flottant simple précision.
 ## Installation
 Le instructions d'installation se trouvent dans le fichier INSTALL.
 
+Par exemple pour un système debian :
+
+* Installer les dépendances:
+
+        sudo apt-get update
+        sudo apt-get install qt4-qmake qt4-dev-tools build-essential
+
+* Vérifier la version de qmake (doit être 2.X) :
+
+        qmake -v
+          QMake version 2.01a
+          Using Qt version 4.8.6 in /usr/lib/arm-linux-gnueabihf
+
+  Si la version est 3.X c'est que vous avez QT5, il faut sélectionner QT4:
+
+        qtchooser -l
+          4
+          5
+          default
+          qt4-arm-linux-gnueabihf
+          qt4
+          qt5-arm-linux-gnueabihf
+          qt5
+        qtchooser -print-env
+          QT_SELECT="default"
+          QTTOOLDIR="/usr/lib/arm-linux-gnueabihf/qt5/bin"
+          QTLIBDIR="/usr/lib/arm-linux-gnueabihf"
+        export QT_SELECT="qt4"
+        qmake -v
+          QMake version 2.01a
+          Using Qt version 4.8.6 in /usr/lib/arm-linux-gnueabihf
+
+* Compiler et installer mbpoll :
+
+        cd mbpoll
+        qmake
+        make
+        sudo make install
+
+C'est tout !
+
 ##Exemples d'utilisation
 
 La commande ci-dessous permet de lire les registres d'entrée 1 et 2 de
