@@ -1,63 +1,56 @@
 <meta charset="UTF-8">
 # Instructions pour la compilation et l'installation
 
-Pour compiler mbpoll, il faut un compilateur C89 et qmake.  
-mbpoll n'utilise pas la librairie Qt, uniquement l'utilitaire qmake afin
-de compiler facilement sur plusieurs plateformes.
+Pour compiler mbpoll, il faut un compilateur C89 et cmake.  
 
 La compilation a été testée sur linux x86 et x86_64, Windows 7 x86 et
 linux ARM (Raspbian).
 
 Sur un système Debian:
 
-    $ sudo apt-get install build-essential qt4-make
-    $ cd mbpoll
-    $ qmake
-    $ make
-    $ sudo make install
-
 * Installer les dépendances:
 
-    $ sudo apt-get update
-    $ sudo apt-get install qt4-qmake qt4-dev-tools build-essential
+    $ sudo apt-get install build-essential cmake
 
-* Vérifier la version de qmake (doit être 2.X) :
+* Générer le Makefile avec cmake:
 
-    $ qmake -v
-    QMake version 2.01a
-    Using Qt version 4.8.6 in /usr/lib/arm-linux-gnueabihf
-
-  Si la version est 3.X c'est que vous avez QT5, il faut sélectionner QT4:
-
-    $ qtchooser -l
-    4
-    5
-    default
-    qt4-arm-linux-gnueabihf
-    qt4
-    qt5-arm-linux-gnueabihf
-    qt5
-    $ qtchooser -print-env
-    QT_SELECT="default"
-    QTTOOLDIR="/usr/lib/arm-linux-gnueabihf/qt5/bin"
-    QTLIBDIR="/usr/lib/arm-linux-gnueabihf"
-    $ export QT_SELECT="qt4"
-    $ qmake -v
-    QMake version 2.01a
-    Using Qt version 4.8.6 in /usr/lib/arm-linux-gnueabihf
+    $ cd mbpoll
+    $ mkdir build
+    $ cd build
+    $ cmake ..
 
 * Compiler et installer mbpoll :
 
-    $ cd mbpoll
-    $ qmake
     $ make
     $ sudo make install
 
+Si on le préfère, on peut à la place de la compilation directe créer un package 
+et l'installer:
+
+    $ make package
+    $ sudo dpkg -i *.deb
+
 C'est tout !
 
-Sur Raspberry Pi, il est possible de valider la prise en charge des
+Sur un système Windows, il faut installer un compilateur Microsoft et Cmake.  
+Une fois installé, il faut compiler à partir d'une invite de commande
+MsVC :
+
+    > cd mbpoll
+    > md build
+    > cd build
+    > cmake ..
+    > nmake
+    > nmake install
+
+Pour créer l'installeur, il faut installer Inno Script Studio 2.2 ou supérieur
+puis ouvrir package/win/mbpoll.iss et compiler l'installeur.
+
+## Prise en charge de Chipio
+
+Il est possible de valider la prise en charge des 
 circuits d'interface Chipio afin de gérer des esclaves ModBus à travers
-le bus I2c.  
+le bus I2c (Sur Raspberry Pi uniquement).  
 Il faut dans ce cas installer préalablement la librairie
 SysIo (version >= 0.2-26) et valider l'option à l'appel de qmake :
 
@@ -68,20 +61,3 @@ SysIo (version >= 0.2-26) et valider l'option à l'appel de qmake :
     $ qmake CONFIG+=chipio
     $ make
     $ sudo make install
-
-Sur un système Windows, il faut installer un compilateur Microsoft
-(testé avec Visual Studio 2013 Community) et Qt (testé avec Qt 5.4).  
-La phase d'installation du compilateur et de Qt étant très longue, il
-est possible d'utiliser le fichier d'installation précompilé.  
-Une fois installé, il faut compiler à partir d'une invite de commande
-Qt 32-bit MSVC2013 Qt 5.4 :
-
-    > cd mbpoll
-    > md build
-    > cd build
-    > qmake ..
-    > nmake
-    > nmake install
-
-Pour créer l'installeur, il faut installer Inno Script Studio 2.2 ou supérieur
-puis ouvrir package/win/mbpoll.iss et compiler l'installeur.
