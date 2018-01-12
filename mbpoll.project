@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<CodeLite_Project Name="mbpoll" InternalType="">
+<CodeLite_Project Name="mbpoll" InternalType="" Version="10.0.0">
   <Plugins>
     <Plugin Name="qmake">
       <![CDATA[00020001N0005Debug0000000000000001N0007Release000000000000]]>
@@ -41,8 +41,8 @@
       <File Name="3rdparty/modbus/modbus-rtu.c"/>
       <File Name="3rdparty/modbus/modbus-rtu-private.h"/>
       <File Name="3rdparty/modbus/AUTHORS"/>
-      <File Name="3rdparty/modbus/COPYING"/>
       <File Name="3rdparty/modbus/README.md"/>
+      <File Name="3rdparty/modbus/COPYING.LESSER"/>
     </VirtualDirectory>
     <VirtualDirectory Name="getopt">
       <File Name="3rdparty/getopt/getopt.h"/>

@@ -4,6 +4,15 @@
  * SPDX-License-Identifier: LGPL-2.1+
  */
 
+#if defined(_WIN32)
+# define OS_WIN32
+/* ws2_32.dll has getaddrinfo and freeaddrinfo on Windows XP and later.
+ * minwg32 headers check WINVER before allowing the use of these */
+# ifndef WINVER
+#   define WINVER 0x0501
+# endif
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -15,12 +24,6 @@
 #include <sys/types.h>
 
 #if defined(_WIN32)
-# define OS_WIN32
-/* ws2_32.dll has getaddrinfo and freeaddrinfo on Windows XP and later.
- * minwg32 headers check WINVER before allowing the use of these */
-# ifndef WINVER
-# define WINVER 0x0501
-# endif
 /* Already set in modbus-tcp.h but it seems order matters in VS2005 */
 # include <winsock2.h>
 # include <ws2tcpip.h>
@@ -44,6 +47,10 @@
 
 #if !defined(MSG_NOSIGNAL)
 #define MSG_NOSIGNAL 0
+#endif
+
+#if defined(_AIX) && !defined(MSG_DONTWAIT)
+#define MSG_DONTWAIT MSG_NONBLOCK
 #endif
 
 #include "modbus-private.h"
@@ -221,7 +228,6 @@ static int _modbus_tcp_set_ipv4_options(int s)
     /* If the OS does not offer SOCK_NONBLOCK, fall back to setting FIONBIO to
      * make sockets non-blocking */
     /* Do not care about the return value, this is optional */
-    option = 1;
 #if !defined(SOCK_NONBLOCK) && defined(FIONBIO)
 #ifdef OS_WIN32
     {
@@ -230,6 +236,7 @@ static int _modbus_tcp_set_ipv4_options(int s)
         ioctlsocket(s, FIONBIO, &loption);
     }
 #else
+    option = 1;
     ioctl(s, FIONBIO, &option);
 #endif
 #endif
@@ -473,7 +480,7 @@ static int _modbus_tcp_flush(modbus_t *ctx)
 int modbus_tcp_listen(modbus_t *ctx, int nb_connection)
 {
     int new_s;
-    int yes;
+    int enable;
     struct sockaddr_in addr;
     modbus_tcp_t *ctx_tcp;
 
@@ -495,9 +502,9 @@ int modbus_tcp_listen(modbus_t *ctx, int nb_connection)
         return -1;
     }
 
-    yes = 1;
+    enable = 1;
     if (setsockopt(new_s, SOL_SOCKET, SO_REUSEADDR,
-                   (char *)&yes, sizeof(yes)) == -1) {
+                   (char *)&enable, sizeof(enable)) == -1) {
         close(new_s);
         return -1;
     }
@@ -596,9 +603,9 @@ int modbus_tcp_pi_listen(modbus_t *ctx, int nb_connection)
             }
             continue;
         } else {
-            int yes = 1;
+            int enable = 1;
             rc = setsockopt(s, SOL_SOCKET, SO_REUSEADDR,
-                            (void *)&yes, sizeof (yes));
+                            (void *)&enable, sizeof (enable));
             if (rc != 0) {
                 close(s);
                 if (ctx->debug) {
@@ -657,8 +664,6 @@ int modbus_tcp_accept(modbus_t *ctx, int *s)
 #endif
 
     if (ctx->s == -1) {
-        close(*s);
-        *s = -1;
         return -1;
     }
 
@@ -687,9 +692,9 @@ int modbus_tcp_pi_accept(modbus_t *ctx, int *s)
 #else
     ctx->s = accept(*s, (struct sockaddr *)&addr, &addrlen);
 #endif
+
     if (ctx->s == -1) {
-        close(*s);
-        *s = -1;
+        return -1;
     }
 
     if (ctx->debug) {
@@ -788,12 +793,15 @@ modbus_t* modbus_new_tcp(const char *ip, int port)
     sa.sa_handler = SIG_IGN;
     if (sigaction(SIGPIPE, &sa, NULL) < 0) {
         /* The debug flag can't be set here... */
-        fprintf(stderr, "Coud not install SIGPIPE handler.\n");
+        fprintf(stderr, "Could not install SIGPIPE handler.\n");
         return NULL;
     }
 #endif
 
     ctx = (modbus_t *)malloc(sizeof(modbus_t));
+    if (ctx == NULL) {
+        return NULL;
+    }
     _modbus_init_common(ctx);
 
     /* Could be changed after to reach a remote serial Modbus device */
@@ -802,6 +810,11 @@ modbus_t* modbus_new_tcp(const char *ip, int port)
     ctx->backend = &_modbus_tcp_backend;
 
     ctx->backend_data = (modbus_tcp_t *)malloc(sizeof(modbus_tcp_t));
+    if (ctx->backend_data == NULL) {
+        modbus_free(ctx);
+        errno = ENOMEM;
+        return NULL;
+    }
     ctx_tcp = (modbus_tcp_t *)ctx->backend_data;
 
     if (ip != NULL) {
@@ -838,6 +851,9 @@ modbus_t* modbus_new_tcp_pi(const char *node, const char *service)
     size_t ret_size;
 
     ctx = (modbus_t *)malloc(sizeof(modbus_t));
+    if (ctx == NULL) {
+        return NULL;
+    }
     _modbus_init_common(ctx);
 
     /* Could be changed after to reach a remote serial Modbus device */
@@ -846,11 +862,16 @@ modbus_t* modbus_new_tcp_pi(const char *node, const char *service)
     ctx->backend = &_modbus_tcp_pi_backend;
 
     ctx->backend_data = (modbus_tcp_pi_t *)malloc(sizeof(modbus_tcp_pi_t));
+    if (ctx->backend_data == NULL) {
+        modbus_free(ctx);
+        errno = ENOMEM;
+        return NULL;
+    }
     ctx_tcp_pi = (modbus_tcp_pi_t *)ctx->backend_data;
 
     if (node == NULL) {
         /* The node argument can be empty to indicate any hosts */
-        ctx_tcp_pi->node[0] = '0';
+        ctx_tcp_pi->node[0] = 0;
     } else {
         dest_size = sizeof(char) * _MODBUS_TCP_PI_NODE_LENGTH;
         ret_size = strlcpy(ctx_tcp_pi->node, node, dest_size);
