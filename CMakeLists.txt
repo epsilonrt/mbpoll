@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 2.8.9)
 project (mbpoll)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unused-parameter -Wno-unused-function")
+#set(CMAKE_BUILD_TYPE Debug)
 
 set(MBPOLL_PKG_VERSION "1.3")
 
