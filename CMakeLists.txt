@@ -9,7 +9,7 @@ include (GitVersion)
 GetGitVersion(MBPOLL_VERSION)
 set(MBPOLL_VERSION
   ${MBPOLL_VERSION_MAJOR}.${MBPOLL_VERSION_MINOR}.${MBPOLL_VERSION_PATCH})
-message("MBPOLL_VERSION=${MBPOLL_VERSION}")
+#message("MBPOLL_VERSION=${MBPOLL_VERSION}")
 
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/version-git.h.in"
