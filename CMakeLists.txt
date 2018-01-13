@@ -7,14 +7,10 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
 include (GitVersion)
 GetGitVersion(MBPOLL_VERSION)
+WriteGitVersionFile(${CMAKE_CURRENT_BINARY_DIR}/version-git.h)
 set(MBPOLL_VERSION
   ${MBPOLL_VERSION_MAJOR}.${MBPOLL_VERSION_MINOR}.${MBPOLL_VERSION_PATCH})
 #message("MBPOLL_VERSION=${MBPOLL_VERSION}")
-
-configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/version-git.h.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/version-git.h"
-    IMMEDIATE @ONLY)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unused-parameter -Wno-unused-function")
 #set(CMAKE_BUILD_TYPE Debug)

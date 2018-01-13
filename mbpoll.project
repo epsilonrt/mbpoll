@@ -77,7 +77,6 @@
     <File Name="README.md"/>
     <File Name="README_FR.md"/>
     <File Name="CMakeLists.txt"/>
-    <File Name="version-git.h.in"/>
   </VirtualDirectory>
   <Settings Type="Executable">
     <GlobalSettings>
@@ -170,4 +169,7 @@
       </Completion>
     </Configuration>
   </Settings>
+  <VirtualDirectory Name="cmake">
+    <File Name="cmake/GitVersion.cmake"/>
+  </VirtualDirectory>
 </CodeLite_Project>
