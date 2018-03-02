@@ -194,6 +194,7 @@ typedef struct xMbPollContext {
   int iPduOffset;
   bool bIsChipIo;
   bool bIsBigEndian;
+  bool bIsQuiet;
 
   // Variables de travail
   modbus_t * xBus;
@@ -236,6 +237,7 @@ static xMbPollContext ctx = {
   .iPduOffset = 1,
   .bIsChipIo = false,
   .bIsBigEndian = false,
+  .bIsQuiet = false,
 
   // Variables de travail
   .xBus = NULL,
@@ -261,11 +263,11 @@ static xChipIoSerial * xChipSerial;
 static const char sChipIoSlaveAddrStr[] = "chipio slave address";
 static const char sChipIoIrqPinStr[] = "chipio irq pin";
 // option -i et -n supplémentaires pour chipio
-static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u04hVvBi:n:";
+static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u04hVvBqi:n:";
 
 #else /* USE_CHIPIO == 0 */
 /* constants ================================================================ */
-static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u04hVvB";
+static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u04hVvBq";
 // -----------------------------------------------------------------------------
 #endif /* USE_CHIPIO == 0 */
 
@@ -448,6 +450,10 @@ main (int argc, char **argv) {
       case 'o':
         ctx.dTimeout = dGetDouble (sTimeoutStr, optarg);
         vCheckDoubleRange (sTimeoutStr, ctx.dTimeout, TIMEOUT_MIN, TIMEOUT_MAX);
+        break;
+
+      case 'q':
+        ctx.bIsQuiet = true;
         break;
 
       // TCP -----------------------------------------------------------------
@@ -696,7 +702,10 @@ main (int argc, char **argv) {
   }
   modbus_set_debug (ctx.xBus, ctx.bIsVerbose);
 
-  vHello();
+  if (false == ctx.bIsQuiet)
+  {
+    vHello();
+  }
 
   // Connection au bus
   if (modbus_connect (ctx.xBus) == -1) {
@@ -739,7 +748,10 @@ main (int argc, char **argv) {
   else {
     int iNbReg, iStartReg;
     // Affichage complet de la configuration
-    vPrintConfig (&ctx);
+    if (false == ctx.bIsQuiet)
+    {
+      vPrintConfig(&ctx);
+    }
 
     // int32 et float utilisent 2 registres 16 bits
     iNbReg = ( (ctx.eFormat == eFormatInt) || (ctx.eFormat == eFormatFloat)) ?
