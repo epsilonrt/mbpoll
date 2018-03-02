@@ -1259,6 +1259,7 @@ vUsage (FILE * stream, int exit_msg) {
            "  -1            Poll only once only, otherwise every poll rate interval\n"
            "  -l #          Poll rate in ms, ( > %d, %d is default)\n"
            "  -o #          Time-out in seconds (%.2f - %.2f, %.2f s is default)\n"
+           "  -q            Less verbose output\n"
            "Options for ModBus / TCP : \n"
            "  -p #          TCP port number (%s is default)\n"
            "Options for ModBus RTU : \n"
