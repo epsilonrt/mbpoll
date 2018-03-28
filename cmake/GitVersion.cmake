@@ -3,7 +3,7 @@
 # This software is governed by the CeCILL license <http://www.cecill.info>    #
 ###############################################################################
 # GitVersion.cmake
-# Dépendances: git, git-version
+# Dépendances: git
 # Variables en sortie :
 # ${_prefix}_FOUND
 # Si ${_prefix}_FOUND = TRUE:
@@ -21,13 +21,18 @@ find_package(Git)
 function(GetGitVersion _prefix)
 
   set (${_prefix}_FOUND FALSE PARENT_SCOPE)
+  set (ret 1)
 
   if(GIT_FOUND)
-    execute_process(COMMAND ${GIT_EXECUTABLE} describe RESULT_VARIABLE ret OUTPUT_VARIABLE str OUTPUT_STRIP_TRAILING_WHITESPACE)
-  else(GIT_FOUND)
+    execute_process(COMMAND ${GIT_EXECUTABLE} describe 
+      RESULT_VARIABLE ret OUTPUT_VARIABLE str OUTPUT_STRIP_TRAILING_WHITESPACE 
+      ERROR_QUIET)
+  endif()
+  
+  if(NOT ret EQUAL 0)
     set(str v1.0-0)
     set(ret 0)
-  endif(GIT_FOUND)
+  endif()
   
   #message("GetGitVersion:str=${str}")
   #message("GetGitVersion:ret=${ret}")
