@@ -25,11 +25,11 @@
 #include <sysio/serial.h>
 #include <sysio/compat.h>
 #include "version-git.h"
-#include "config.h"
+#include "mbpoll-config.h"
 
 /* constants ================================================================ */
 #define AUTHORS "epsilonRT"
-#define WEBSITE "http://www.epsilonrt.com"
+#define WEBSITE "http://www.epsilonrt.fr"
 
 /* conditionals ============================================================= */
 #if defined(__GNUC__) && __SIZEOF_FLOAT__ != 4 && !defined (__STDC_IEC_559__)
