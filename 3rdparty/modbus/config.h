@@ -83,7 +83,9 @@
 #define HAVE_STRING_H 1
 
 /* Define to 1 if you have the `strlcpy' function. */
+#ifdef __APPLE__
 #define HAVE_STRLCPY 1
+#endif
 
 /* Define to 1 if you have the <sys/ioctl.h> header file. */
 #define HAVE_SYS_IOCTL_H 1
