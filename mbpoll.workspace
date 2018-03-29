@@ -3,9 +3,11 @@
   <Project Name="mbpoll" Path="mbpoll.project" Active="Yes"/>
   <BuildMatrix>
     <WorkspaceConfiguration Name="Debug" Selected="no">
+      <Environment/>
       <Project Name="mbpoll" ConfigName="Debug"/>
     </WorkspaceConfiguration>
     <WorkspaceConfiguration Name="Release" Selected="yes">
+      <Environment/>
       <Project Name="mbpoll" ConfigName="Release"/>
     </WorkspaceConfiguration>
   </BuildMatrix>
