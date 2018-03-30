@@ -8,7 +8,9 @@
 #define HAVE_ARPA_INET_H 1
 
 /* Define to 1 if you have the <byteswap.h> header file. */
+#ifndef __APPLE__
 #define HAVE_BYTESWAP_H 1
+#endif
 
 /* Define to 1 if you have the declaration of `TIOCM_RTS', and to 0 if you
    don't. */

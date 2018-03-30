@@ -9,12 +9,12 @@ project(mbpoll)
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
 # Set default locations
-set(CL_OUTPUT_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}//cmake-build-Debug/output)
+set(CL_OUTPUT_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}//cmake-build-Release/output)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CL_OUTPUT_DIRECTORY})
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CL_OUTPUT_DIRECTORY})
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CL_OUTPUT_DIRECTORY})
 
-set(CONFIGURATION_NAME "Debug")
+set(CONFIGURATION_NAME "Release")
 
 # Projects
 
@@ -51,19 +51,21 @@ include_directories(
     .
     src
     3rdparty
-    3rdparty/modbus
     ${CMAKE_CURRENT_BINARY_DIR}
 
 )
 
 
 # Compiler options
-add_definitions(-g)
-add_definitions(-O0)
+add_definitions(-O2)
 add_definitions(-Wall)
 add_definitions(-Wno-unused-parameter)
 add_definitions(-Wno-unused-function)
 add_definitions(-Wno-unused-const-variable)
+add_definitions(
+    -DNDEBUG
+)
+
 
 # Linker options
 
@@ -78,17 +80,17 @@ set(CMAKE_LDFLAGS "${CMAKE_LDFLAGS} -L. ")
 # Define the C sources
 set ( C_SRCS
     ${CMAKE_CURRENT_LIST_DIR}/3rdparty/modbus/modbus-rtu.c
-    ${CMAKE_CURRENT_LIST_DIR}/src/mbpoll.c
-    ${CMAKE_CURRENT_LIST_DIR}/3rdparty/modbus/modbus.c
-    ${CMAKE_CURRENT_LIST_DIR}/3rdparty/modbus/modbus-data.c
     ${CMAKE_CURRENT_LIST_DIR}/3rdparty/sysio/delay.c
     ${CMAKE_CURRENT_LIST_DIR}/3rdparty/sysio/serial.c
+    ${CMAKE_CURRENT_LIST_DIR}/3rdparty/modbus/modbus-data.c
+    ${CMAKE_CURRENT_LIST_DIR}/3rdparty/modbus/modbus.c
+    ${CMAKE_CURRENT_LIST_DIR}/src/mbpoll.c
     ${CMAKE_CURRENT_LIST_DIR}/3rdparty/modbus/modbus-tcp.c
 )
 
 set_source_files_properties(
     ${C_SRCS} PROPERTIES COMPILE_FLAGS 
-    " -g -O0 -Wall -Wno-unused-parameter -Wno-unused-function -Wno-unused-const-variable")
+    " -O2 -Wall -Wno-unused-parameter -Wno-unused-function -Wno-unused-const-variable")
 
 if(WIN32)
     enable_language(RC)

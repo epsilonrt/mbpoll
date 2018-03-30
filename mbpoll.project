@@ -1,7 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CodeLite_Project Name="mbpoll" Version="10.0.0" InternalType="Console">
+  <Plugins>
+    <Plugin Name="qmake">
+      <![CDATA[00020001N0005Debug0000000000000001N0007Release000000000000]]>
+    </Plugin>
+  </Plugins>
   <VirtualDirectory Name="include">
-    <File Name="src/config.h"/>
+    <File Name="mbpoll-config.h"/>
     <VirtualDirectory Name="modbus">
       <File Name="3rdparty/modbus/modbus-version.h"/>
       <File Name="3rdparty/modbus/modbus-tcp-private.h"/>
@@ -13,11 +18,6 @@
       <File Name="3rdparty/modbus/config.h"/>
     </VirtualDirectory>
   </VirtualDirectory>
-  <Plugins>
-    <Plugin Name="qmake">
-      <![CDATA[00020001N0005Debug0000000000000001N0007Release000000000000]]>
-    </Plugin>
-  </Plugins>
   <Description/>
   <Dependencies/>
   <VirtualDirectory Name="src">
