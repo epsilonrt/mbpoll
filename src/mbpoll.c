@@ -26,6 +26,7 @@
 #include <sysio/compat.h>
 #include "version-git.h"
 #include "mbpoll-config.h"
+#include "mbpoll-gpio-rts.h"
 
 /* constants ================================================================ */
 #define AUTHORS "epsilonRT"
@@ -163,6 +164,10 @@ static const char sLittleEndianStr[] = "(little endian)";
 static const char sBigEndianStr[] = "(big endian)";
 static char * progname;
 
+#ifdef MBPOLL_GPIO_RTS
+static const char sRtsPinStr[] = "RTS pin";
+#endif
+
 /* structures =============================================================== */
 typedef struct xChipIoContext xChipIoContext;
 
@@ -195,6 +200,9 @@ typedef struct xMbPollContext {
   bool bIsChipIo;
   bool bIsBigEndian;
   bool bIsQuiet;
+#ifdef MBPOLL_GPIO_RTS
+  int iRtsPin;
+#endif
 
   // Variables de travail
   modbus_t * xBus;
@@ -231,13 +239,16 @@ static xMbPollContext ctx = {
   .bIsVerbose = false,
   .bIsPolling = true,
   .bIsReportSlaveID = false,
-  .iRtuMode = MODBUS_RTU_RS232,
+  .iRtuMode = MODBUS_RTU_RTS_NONE,
   .bIsWrite = true,
   .bIsDefaultMode = true,
   .iPduOffset = 1,
   .bIsChipIo = false,
   .bIsBigEndian = false,
   .bIsQuiet = false,
+#ifdef MBPOLL_GPIO_RTS
+  .iRtsPin = -1,
+#endif
 
   // Variables de travail
   .xBus = NULL,
@@ -263,11 +274,15 @@ static xChipIoSerial * xChipSerial;
 static const char sChipIoSlaveAddrStr[] = "chipio slave address";
 static const char sChipIoIrqPinStr[] = "chipio irq pin";
 // option -i et -n supplémentaires pour chipio
-static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u04hVvBqi:n:";
+static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u0RhVvBqi:n:";
 
 #else /* USE_CHIPIO == 0 */
 /* constants ================================================================ */
-static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u04hVvBq";
+#ifdef MBPOLL_GPIO_RTS
+static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u0R::F::hVvBq";
+#else
+static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u0RFhVvBq";
+#endif
 // -----------------------------------------------------------------------------
 #endif /* USE_CHIPIO == 0 */
 
@@ -427,12 +442,22 @@ main (int argc, char **argv) {
         ctx.bIsBigEndian = true;
         break;
 
-      case '4':
-        ctx.iRtuMode = MODBUS_RTU_RS485;
+      case 'R':
+        ctx.iRtuMode = MODBUS_RTU_RTS_UP;
+#ifdef MBPOLL_GPIO_RTS
+        if (optarg) {
+          ctx.iRtsPin = iGetInt (sRtsPinStr, optarg, 10);
+        }
+#endif
         break;
 
-      case '5':
-        ctx.iRtuMode = MODBUS_RTU_RS485_RTS_ON_SEND;
+      case 'F':
+        ctx.iRtuMode = MODBUS_RTU_RTS_DOWN;
+#ifdef MBPOLL_GPIO_RTS
+        if (optarg) {
+          ctx.iRtsPin = iGetInt (sRtsPinStr, optarg, 10);
+        }
+#endif
         break;
 
       case '0':
@@ -456,12 +481,12 @@ main (int argc, char **argv) {
         ctx.bIsQuiet = true;
         break;
 
-      // TCP -----------------------------------------------------------------
+        // TCP -----------------------------------------------------------------
       case 'p':
         ctx.sTcpPort = optarg;
         break;
 
-      // RTU -----------------------------------------------------------------
+        // RTU -----------------------------------------------------------------
       case 'b':
         ctx.xRtu.baud = iGetInt (sRtuBaudrateStr, optarg, 0);
         vCheckIntRange (sRtuBaudrateStr, ctx.xRtu.baud, RTU_BAUDRATE_MIN,
@@ -482,7 +507,7 @@ main (int argc, char **argv) {
 
 #ifdef USE_CHIPIO
 // -----------------------------------------------------------------------------
-      // ChipIo --------------------------------------------------------------
+        // ChipIo --------------------------------------------------------------
       case 'i':
         iChipIoSlaveAddr = iGetInt (sChipIoSlaveAddrStr, optarg, 0);
         vCheckIntRange (sChipIoSlaveAddrStr, iChipIoSlaveAddr,
@@ -497,7 +522,7 @@ main (int argc, char **argv) {
 // -----------------------------------------------------------------------------
 #endif /* USE_CHIPIO defined */
 
-      // Misc. ---------------------------------------------------------------
+        // Misc. ---------------------------------------------------------------
       case 'h':
         vUsage (stdout, EXIT_SUCCESS);
         break;
@@ -702,9 +727,26 @@ main (int argc, char **argv) {
   }
   modbus_set_debug (ctx.xBus, ctx.bIsVerbose);
 
-  if (false == ctx.bIsQuiet)
-  {
+  if (false == ctx.bIsQuiet) {
     vHello();
+  }
+
+  if ( (ctx.iRtuMode != MODBUS_RTU_RTS_NONE) && (ctx.eMode == eModeRtu) &&
+       !ctx.bIsChipIo) {
+
+#ifdef MBPOLL_GPIO_RTS
+    if (ctx.iRtsPin >= 0) {
+
+      if (init_gpio_rts (ctx.iRtsPin, ctx.iRtuMode == MODBUS_RTU_RTS_UP) != 0) {
+
+        vIoErrorExit ("Unable to set GPIO RTS pin: %d", ctx.iRtsPin);
+      }
+      modbus_rtu_set_custom_rts (ctx.xBus, set_gpio_rts);
+      modbus_rtu_set_rts_delay (ctx.xBus, 2000);
+    }
+#endif
+    modbus_rtu_set_serial_mode (ctx.xBus, MODBUS_RTU_RS485);
+    modbus_rtu_set_rts (ctx.xBus, ctx.iRtuMode);
   }
 
   // Connection au bus
@@ -714,17 +756,12 @@ main (int argc, char **argv) {
     vIoErrorExit ("Connection failed: %s", modbus_strerror (errno));
   }
 
-  if ( (ctx.iRtuMode != MODBUS_RTU_RS232) && (ctx.eMode == eModeRtu) &&
-       !ctx.bIsChipIo) {
-
-    modbus_rtu_set_serial_mode (ctx.xBus, ctx.iRtuMode);
-  }
 
   /*
-   * évites que l'esclave prenne l'impulsion de 40µs créée par le driver à 
+   * évites que l'esclave prenne l'impulsion de 40µs créée par le driver à
    * l'ouverture du port comme un bit de start.
    */
-  delay_ms (20); 
+  delay_ms (20);
 
   // Réglage du timeout de réponse
   uint32_t  sec, usec;
@@ -748,9 +785,8 @@ main (int argc, char **argv) {
   else {
     int iNbReg, iStartReg;
     // Affichage complet de la configuration
-    if (false == ctx.bIsQuiet)
-    {
-      vPrintConfig(&ctx);
+    if (false == ctx.bIsQuiet) {
+      vPrintConfig (&ctx);
     }
 
     // int32 et float utilisent 2 registres 16 bits
@@ -1266,8 +1302,15 @@ vUsage (FILE * stream, int exit_msg) {
            "  -d #          Databits (7 or 8, %s for RTU)\n"
            "  -s #          Stopbits (1 or 2, %s is default)\n"
            "  -P #          Parity (none, even, odd, %s is default)\n"
-           "  -4            RS-485 mode (/RTS on after sending)\n"
-           "  -5            RS-485 mode (/RTS on when sending)\n"
+#ifdef MBPOLL_GPIO_RTS
+           "  -R [#]        RS-485 mode (/RTS on (0) after sending)\n"
+           "                 Optional parameter for the GPIO RTS pin number\n"
+           "  -F [#]        RS-485 mode (/RTS on (0) when sending)\n"
+           "                 Optional parameter for the GPIO RTS pin number\n"
+#else
+           "  -R            RS-485 mode (/RTS on (0) after sending)\n"
+           "  -F            RS-485 mode (/RTS on (0) when sending)\n"
+#endif
 #ifdef USE_CHIPIO
 // -----------------------------------------------------------------------------
            "Options for ModBus RTU for ChipIo serial port : \n"

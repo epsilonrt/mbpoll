@@ -2,27 +2,25 @@
 
 cmake_minimum_required(VERSION 2.8.11)
 
-# Project name
+# Workspace name
 project(mbpoll)
 
 # This setting is useful for providing JSON file used by CodeLite for code completion
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
 # Set default locations
-set(CL_OUTPUT_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}//cmake-build-Debug/output)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CL_OUTPUT_DIRECTORY})
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CL_OUTPUT_DIRECTORY})
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CL_OUTPUT_DIRECTORY})
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
-set(CONFIGURATION_NAME "Debug")
+set(CONFIGURATION_NAME "Release")
 
 # Projects
 
 
 # Top project
 # Define some variables
-set(PROJECT_mbpoll_PATH "${CMAKE_CURRENT_LIST_DIR}")
-set(WORKSPACE_PATH "${CMAKE_CURRENT_LIST_DIR}/")
+set(PROJECT_PATH "${CMAKE_SOURCE_DIR}/")
 
 
 
@@ -37,6 +35,35 @@ endif (NOT CL_USED)
 
 # Appends the cmake/modules path to MAKE_MODULE_PATH variable.
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
+
+# search for the piduino package, if found, add the options ...
+find_package(piduino QUIET)
+if (piduino_FOUND)
+  message (STATUS "PiDuino found !")
+  link_directories(${PIDUINO_LIBRARY_DIRS})
+  add_definitions(${PIDUINO_CFLAGS})
+  if(PIDUINO_WITH_GPIO)
+    add_definitions(-DMBPOLL_GPIO_RTS)
+  endif(PIDUINO_WITH_GPIO)
+  include_directories(BEFORE ${PIDUINO_INCLUDE_DIRS})
+  list(APPEND LINK_OPTIONS ${PIDUINO_LIBRARIES})
+  include (PiBoardInfo)
+  if (NOT PIBOARD_ID)
+    message (STATUS "Check the target platform, you can use PIBOARD_ID to force the target...")
+    GetPiBoardInfo()
+  endif (NOT PIBOARD_ID)
+  set(PROGRAM_PERMISSIONS
+    OWNER_WRITE OWNER_READ OWNER_EXECUTE
+    GROUP_READ GROUP_EXECUTE
+    WORLD_READ WORLD_EXECUTE
+    SETUID)
+
+else (piduino_FOUND)
+  set(PROGRAM_PERMISSIONS
+    OWNER_WRITE OWNER_READ OWNER_EXECUTE
+    GROUP_READ GROUP_EXECUTE
+    WORLD_READ WORLD_EXECUTE)
+endif (piduino_FOUND)
 
 include (GitVersion)
 GetGitVersion(MBPOLL_VERSION)
@@ -58,12 +85,15 @@ include_directories(
 
 
 # Compiler options
-add_definitions(-g)
-add_definitions(-O0)
+add_definitions(-O2)
 add_definitions(-Wall)
 add_definitions(-Wno-unused-parameter)
 add_definitions(-Wno-unused-function)
 add_definitions(-Wno-unused-const-variable)
+add_definitions(
+    -DNDEBUG
+)
+
 
 # Linker options
 
@@ -77,18 +107,27 @@ set(CMAKE_LDFLAGS "${CMAKE_LDFLAGS} -L. ")
 
 # Define the C sources
 set ( C_SRCS
-    ${CMAKE_CURRENT_LIST_DIR}/3rdparty/modbus/modbus-rtu.c
-    ${CMAKE_CURRENT_LIST_DIR}/src/mbpoll.c
-    ${CMAKE_CURRENT_LIST_DIR}/3rdparty/modbus/modbus.c
-    ${CMAKE_CURRENT_LIST_DIR}/3rdparty/modbus/modbus-data.c
-    ${CMAKE_CURRENT_LIST_DIR}/3rdparty/sysio/delay.c
-    ${CMAKE_CURRENT_LIST_DIR}/3rdparty/sysio/serial.c
-    ${CMAKE_CURRENT_LIST_DIR}/3rdparty/modbus/modbus-tcp.c
+    ${CMAKE_SOURCE_DIR}/3rdparty/sysio/serial.c
+    ${CMAKE_SOURCE_DIR}/3rdparty/sysio/delay.c
+    ${CMAKE_SOURCE_DIR}/3rdparty/modbus/modbus-tcp.c
+    ${CMAKE_SOURCE_DIR}/3rdparty/modbus/modbus-rtu.c
+    ${CMAKE_SOURCE_DIR}/3rdparty/modbus/modbus-data.c
+    ${CMAKE_SOURCE_DIR}/3rdparty/modbus/modbus.c
+    ${CMAKE_SOURCE_DIR}/src/mbpoll.c
+)
+
+# Define the CXX sources
+set ( CXX_SRCS
+    ${CMAKE_SOURCE_DIR}/src/RtsPin.cpp
 )
 
 set_source_files_properties(
+    ${CXX_SRCS} PROPERTIES COMPILE_FLAGS 
+    " -O2 -Wall")
+
+set_source_files_properties(
     ${C_SRCS} PROPERTIES COMPILE_FLAGS 
-    " -g -O0 -Wall -Wno-unused-parameter -Wno-unused-function -Wno-unused-const-variable")
+    " -O2 -Wall -Wno-unused-parameter -Wno-unused-function -Wno-unused-const-variable")
 
 if(WIN32)
     enable_language(RC)
@@ -109,7 +148,8 @@ target_link_libraries(mbpoll ${LINK_OPTIONS})
 
 #{{{{ User Code 3
 # Place your code here
-install(TARGETS mbpoll RUNTIME DESTINATION bin)
+install(TARGETS mbpoll RUNTIME DESTINATION bin
+        PERMISSIONS ${PROGRAM_PERMISSIONS})
 
 ### Debian Package generation
 set(CPACK_GENERATOR "DEB")

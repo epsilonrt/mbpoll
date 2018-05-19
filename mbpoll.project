@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CodeLite_Project Name="mbpoll" Version="10.0.0" InternalType="Console">
+  <Plugins>
+    <Plugin Name="qmake">
+      <![CDATA[00020001N0005Debug0000000000000001N0007Release000000000000]]>
+    </Plugin>
+  </Plugins>
   <VirtualDirectory Name="include">
     <File Name="src/config.h"/>
     <VirtualDirectory Name="modbus">
@@ -12,12 +17,8 @@
       <File Name="3rdparty/modbus/modbus.h"/>
       <File Name="3rdparty/modbus/config.h"/>
     </VirtualDirectory>
+    <File Name="src/mbpoll-gpio-rts.h"/>
   </VirtualDirectory>
-  <Plugins>
-    <Plugin Name="qmake">
-      <![CDATA[00020001N0005Debug0000000000000001N0007Release000000000000]]>
-    </Plugin>
-  </Plugins>
   <Description/>
   <Dependencies/>
   <VirtualDirectory Name="src">
@@ -28,6 +29,7 @@
     <File Name="3rdparty/modbus/modbus-data.c"/>
     <File Name="3rdparty/modbus/modbus.c"/>
     <File Name="src/mbpoll.c"/>
+    <File Name="src/RtsPin.cpp"/>
   </VirtualDirectory>
   <VirtualDirectory Name="resources">
     <File Name="CMakeLists.txt"/>
@@ -53,7 +55,7 @@
       </Compiler>
       <Linker Options="" Required="yes"/>
       <ResourceCompiler Options="" Required="no"/>
-      <General OutputFile="" IntermediateDirectory="./Debug" Command="$(WorkspacePath)/cmake-build-$(WorkspaceConfiguration)/output/$(ProjectName)" CommandArguments="-V" UseSeparateDebugArgs="no" DebugArguments="" WorkingDirectory="$(IntermediateDirectory)" PauseExecWhenProcTerminates="yes" IsGUIProgram="no" IsEnabled="yes"/>
+      <General OutputFile="" IntermediateDirectory="./Debug" Command="$(WorkspacePath)/cmake-build-$(WorkspaceConfiguration)/output/$(ProjectName)" CommandArguments="-a33 -b38400 -t3 -c2 -4 4 /dev/ttyS1" UseSeparateDebugArgs="no" DebugArguments="" WorkingDirectory="$(IntermediateDirectory)" PauseExecWhenProcTerminates="yes" IsGUIProgram="no" IsEnabled="yes"/>
       <BuildSystem Name="CMake">-DCL_USED=1</BuildSystem>
       <Environment EnvVarSetName="&lt;Use Defaults&gt;" DbgSetName="&lt;Use Defaults&gt;">
         <![CDATA[]]>
@@ -90,6 +92,7 @@
       <Compiler Options="-O2;-Wall" C_Options="-O2;-Wall;-Wno-unused-parameter;-Wno-unused-function;-Wno-unused-const-variable" Assembler="" Required="yes" PreCompiledHeader="" PCHInCommandLine="no" PCHFlags="" PCHFlagsPolicy="0">
         <IncludePath Value="src"/>
         <IncludePath Value="3rdparty"/>
+        <IncludePath Value="3rdparty/modbus"/>
         <IncludePath Value="${CMAKE_CURRENT_BINARY_DIR}"/>
         <Preprocessor Value="NDEBUG"/>
       </Compiler>
