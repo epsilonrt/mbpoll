@@ -36,6 +36,14 @@ endif (NOT CL_USED)
 # Appends the cmake/modules path to MAKE_MODULE_PATH variable.
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
+find_package(PkgConfig REQUIRED)
+pkg_check_modules (LIBMODBUS REQUIRED libmodbus>=3.1.4)
+
+link_directories(${LIBMODBUS_LIBRARY_DIRS})
+add_definitions(${LIBMODBUS_CFLAGS})
+include_directories(BEFORE ${LIBMODBUS_INCLUDE_DIRS})
+list(APPEND LINK_OPTIONS ${LIBMODBUS_LIBRARIES})
+
 # search for the piduino package, if found, add the options ...
 find_package(piduino QUIET)
 if (piduino_FOUND)
@@ -70,6 +78,7 @@ GetGitVersion(MBPOLL_VERSION)
 WriteGitVersionFile(${CMAKE_CURRENT_BINARY_DIR}/version-git.h)
 set(MBPOLL_VERSION
   ${MBPOLL_VERSION_MAJOR}.${MBPOLL_VERSION_MINOR}.${MBPOLL_VERSION_PATCH})
+set (PROJECT_DESCRIPTION "ModBus Master Simulator")
 #target_include_directories(mbpoll PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 #message("MBPOLL_VERSION=${MBPOLL_VERSION}")
 #}}}}
@@ -109,10 +118,6 @@ set(CMAKE_LDFLAGS "${CMAKE_LDFLAGS} -L. ")
 set ( C_SRCS
     ${CMAKE_SOURCE_DIR}/3rdparty/sysio/serial.c
     ${CMAKE_SOURCE_DIR}/3rdparty/sysio/delay.c
-    ${CMAKE_SOURCE_DIR}/3rdparty/modbus/modbus-tcp.c
-    ${CMAKE_SOURCE_DIR}/3rdparty/modbus/modbus-rtu.c
-    ${CMAKE_SOURCE_DIR}/3rdparty/modbus/modbus-data.c
-    ${CMAKE_SOURCE_DIR}/3rdparty/modbus/modbus.c
     ${CMAKE_SOURCE_DIR}/src/mbpoll.c
 )
 
@@ -152,9 +157,42 @@ install(TARGETS mbpoll RUNTIME DESTINATION bin
         PERMISSIONS ${PROGRAM_PERMISSIONS})
 
 ### Debian Package generation
+set(CPACK_PACKAGE_VERSION "${MBPOLL_VERSION_MAJOR}.${MBPOLL_VERSION_MINOR}-${MBPOLL_VERSION_PATCH}")
+set(CPACK_PACKAGE_VERSION_MAJOR "${MBPOLL_VERSION_MAJOR}")
+set(CPACK_PACKAGE_VERSION_MINOR "${MBPOLL_VERSION_MINOR}")
+set(CPACK_PACKAGE_VERSION_PATCH "${MBPOLL_VERSION_PATCH}")
+set(CPACK_PACKAGE_CONTACT "Pascal JEAN <epsilonrt@gmail.com>")
+set(CPACK_RESOURCE_FILE_LICENSE "${PROJECT_SOURCE_DIR}/LICENSE")
+
 set(CPACK_GENERATOR "DEB")
-set(CPACK_PACKAGE_VERSION "${MBPOLL_PKG_VERSION}")
-set(CPACK_DEBIAN_PACKAGE_MAINTAINER "epsilonrt")
+
+if (CPACK_GENERATOR STREQUAL "DEB")
+
+  set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "https://github.com/epsilonrt/mbpoll")
+
+  find_program(dpkg_query NAMES dpkg-query)
+  find_program(dpkg_cmd NAMES dpkg)
+
+  if (NOT CPACK_DEBIAN_PACKAGE_ARCHITECTURE)
+    if (dpkg_cmd)
+      execute_process(COMMAND ${dpkg_cmd} --print-architecture RESULT_VARIABLE ret OUTPUT_VARIABLE arch OUTPUT_STRIP_TRAILING_WHITESPACE)
+      if (ret EQUAL 0)
+        set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "${arch}")
+      else (ret EQUAL 0)
+        message(WARNING "Unable to get debian architecture !")
+      endif (ret EQUAL 0)
+    endif (dpkg_cmd)
+  endif (NOT CPACK_DEBIAN_PACKAGE_ARCHITECTURE)
+
+  message(STATUS "Debian architecture ${CPACK_DEBIAN_PACKAGE_ARCHITECTURE}")
+
+  set(CPACK_DEBIAN_PACKAGE_NAME ${PROJECT_NAME})
+  set(CPACK_COMPONENT_DESCRIPTION "${PROJECT_DESCRIPTION}")
+  set(CPACK_DEBIAN_FILE_NAME "${PROJECT_NAME}_${CPACK_PACKAGE_VERSION}_${CPACK_DEBIAN_PACKAGE_ARCHITECTURE}.deb")
+  #set(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6 (>= ${libc6_ver}), libgcc1 (>= ${libgcc1_ver}), libsqlite3 (>= ${libsqlite3_ver})")
+  set(CPACK_DEBIAN_PACKAGE_SECTION "utils")
+endif (CPACK_GENERATOR STREQUAL "DEB")
+
 include(CPack)
 #}}}}
 

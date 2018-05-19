@@ -6,17 +6,6 @@
     </Plugin>
   </Plugins>
   <VirtualDirectory Name="include">
-    <File Name="src/config.h"/>
-    <VirtualDirectory Name="modbus">
-      <File Name="3rdparty/modbus/modbus-version.h"/>
-      <File Name="3rdparty/modbus/modbus-tcp-private.h"/>
-      <File Name="3rdparty/modbus/modbus-tcp.h"/>
-      <File Name="3rdparty/modbus/modbus-rtu-private.h"/>
-      <File Name="3rdparty/modbus/modbus-rtu.h"/>
-      <File Name="3rdparty/modbus/modbus-private.h"/>
-      <File Name="3rdparty/modbus/modbus.h"/>
-      <File Name="3rdparty/modbus/config.h"/>
-    </VirtualDirectory>
     <File Name="src/mbpoll-gpio-rts.h"/>
   </VirtualDirectory>
   <Description/>
@@ -24,10 +13,6 @@
   <VirtualDirectory Name="src">
     <File Name="3rdparty/sysio/serial.c"/>
     <File Name="3rdparty/sysio/delay.c"/>
-    <File Name="3rdparty/modbus/modbus-tcp.c"/>
-    <File Name="3rdparty/modbus/modbus-rtu.c"/>
-    <File Name="3rdparty/modbus/modbus-data.c"/>
-    <File Name="3rdparty/modbus/modbus.c"/>
     <File Name="src/mbpoll.c"/>
     <File Name="src/RtsPin.cpp"/>
   </VirtualDirectory>
