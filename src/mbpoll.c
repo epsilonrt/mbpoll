@@ -27,7 +27,11 @@
 #include <inttypes.h>
 #include <assert.h>
 #include <modbus.h>
-#include <Arduino.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <time.h>
+#include <unistd.h>
+#include <sys/time.h>
 #include "serial.h"
 #include "custom-rts.h"
 #include "version-git.h"
@@ -336,6 +340,7 @@ const char * sModeToStr (eModes eMode);
 void vSigIntHandler (int sig);
 float fSwapFloat (float f);
 int32_t lSwapLong (int32_t l);
+void mb_delay (unsigned long d);
 
 #if defined(_MSC_VER)
 // Portage des fonctions POSIX ou GNU
@@ -503,12 +508,12 @@ main (int argc, char **argv) {
         ctx.bIsQuiet = true;
         break;
 
-        // TCP -----------------------------------------------------------------
+      // TCP -----------------------------------------------------------------
       case 'p':
         ctx.sTcpPort = optarg;
         break;
 
-        // RTU -----------------------------------------------------------------
+      // RTU -----------------------------------------------------------------
       case 'b':
         ctx.xRtu.baud = iGetInt (sRtuBaudrateStr, optarg, 0);
         vCheckIntRange (sRtuBaudrateStr, ctx.xRtu.baud, RTU_BAUDRATE_MIN,
@@ -529,7 +534,7 @@ main (int argc, char **argv) {
 
 #ifdef USE_CHIPIO
 // -----------------------------------------------------------------------------
-        // ChipIo --------------------------------------------------------------
+      // ChipIo --------------------------------------------------------------
       case 'i':
         iChipIoSlaveAddr = iGetInt (sChipIoSlaveAddrStr, optarg, 0);
         vCheckIntRange (sChipIoSlaveAddrStr, iChipIoSlaveAddr,
@@ -544,7 +549,7 @@ main (int argc, char **argv) {
 // -----------------------------------------------------------------------------
 #endif /* USE_CHIPIO defined */
 
-        // Misc. ---------------------------------------------------------------
+      // Misc. ---------------------------------------------------------------
       case 'h':
         vUsage (stdout, EXIT_SUCCESS);
         break;
@@ -552,7 +557,7 @@ main (int argc, char **argv) {
       case 'V':
         vVersion();
         break;
-        
+
       case 'w':
         vWarranty();
         break;
@@ -763,13 +768,13 @@ main (int argc, char **argv) {
 #ifdef MBPOLL_GPIO_RTS
     if (ctx.iRtsPin >= 0) {
       double t = 11 / (double) ctx.xRtu.baud / 2 * 1e6; // delay 1/2 car
-      
+
       if (init_custom_rts (ctx.iRtsPin, ctx.iRtuMode == MODBUS_RTU_RTS_UP) != 0) {
 
         vIoErrorExit ("Unable to set GPIO RTS pin: %d", ctx.iRtsPin);
       }
       modbus_rtu_set_custom_rts (ctx.xBus, set_custom_rts);
-      modbus_rtu_set_rts_delay (ctx.xBus, (int)t);
+      modbus_rtu_set_rts_delay (ctx.xBus, (int) t);
     }
 #endif
     modbus_rtu_set_serial_mode (ctx.xBus, MODBUS_RTU_RS485);
@@ -788,7 +793,7 @@ main (int argc, char **argv) {
    * évites que l'esclave prenne l'impulsion de 40µs créée par le driver à
    * l'ouverture du port comme un bit de start.
    */
-  delay (20);
+  mb_delay (20);
 
   // Réglage du timeout de réponse
   uint32_t  sec, usec;
@@ -889,7 +894,6 @@ main (int argc, char **argv) {
           if (ctx.bIsPolling) {
 
             printf (" Ctrl-C to stop)\n");
-            // setPriority (50);
           }
           else {
 
@@ -934,7 +938,7 @@ main (int argc, char **argv) {
           }
           if (ctx.bIsPolling) {
 
-            delay (ctx.iPollRate);
+            mb_delay (ctx.iPollRate);
           }
         }
         // Fin lecture ---------------------------------------------------------
@@ -1272,7 +1276,7 @@ vWarranty (void) {
 }
 
 // -----------------------------------------------------------------------------
-  void
+void
 vHello (void) {
   printf ("mbpoll %s - FieldTalk(tm) Modbus(R) Master Simulator\n",
           VERSION_SHORT);
@@ -1445,7 +1449,7 @@ vCheckDoubleRange (const char * sName, double d, double min, double max) {
 // -----------------------------------------------------------------------------
 int
 iGetEnum (const char * sName, char * sElmt, const char ** psStrList,
-const int * iList, int iSize) {
+          const int * iList, int iSize) {
   int i;
   for (i = 0; i < iSize; i++) {
 
@@ -1684,4 +1688,23 @@ lSwapLong (int32_t l) {
   return ret;
 }
 
+// -----------------------------------------------------------------------------
+void
+mb_delay (unsigned long d) {
+
+  if (d) {
+
+    if (d == -1) {
+
+      sleep (-1);
+    }
+    else {
+      struct timespec dt;
+
+      dt.tv_nsec = (d % 1000UL) * 1000000UL;
+      dt.tv_sec  = d / 1000UL;
+      nanosleep (&dt, NULL);
+    }
+  }
+}
 /* ========================================================================== */
