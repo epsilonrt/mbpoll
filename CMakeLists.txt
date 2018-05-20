@@ -116,19 +116,10 @@ set(CMAKE_LDFLAGS "${CMAKE_LDFLAGS} -L. ")
 
 # Define the C sources
 set ( C_SRCS
-    ${CMAKE_SOURCE_DIR}/3rdparty/sysio/serial.c
-    ${CMAKE_SOURCE_DIR}/3rdparty/sysio/delay.c
     ${CMAKE_SOURCE_DIR}/src/mbpoll.c
+    ${CMAKE_SOURCE_DIR}/src/custom-rts.c
+    ${CMAKE_SOURCE_DIR}/src/serial.c
 )
-
-# Define the CXX sources
-set ( CXX_SRCS
-    ${CMAKE_SOURCE_DIR}/src/RtsPin.cpp
-)
-
-set_source_files_properties(
-    ${CXX_SRCS} PROPERTIES COMPILE_FLAGS 
-    " -O2 -Wall")
 
 set_source_files_properties(
     ${C_SRCS} PROPERTIES COMPILE_FLAGS 
@@ -162,7 +153,7 @@ set(CPACK_PACKAGE_VERSION_MAJOR "${MBPOLL_VERSION_MAJOR}")
 set(CPACK_PACKAGE_VERSION_MINOR "${MBPOLL_VERSION_MINOR}")
 set(CPACK_PACKAGE_VERSION_PATCH "${MBPOLL_VERSION_PATCH}")
 set(CPACK_PACKAGE_CONTACT "Pascal JEAN <epsilonrt@gmail.com>")
-set(CPACK_RESOURCE_FILE_LICENSE "${PROJECT_SOURCE_DIR}/LICENSE")
+set(CPACK_RESOURCE_FILE_LICENSE "${PROJECT_SOURCE_DIR}/COPYING")
 
 set(CPACK_GENERATOR "DEB")
 

@@ -6,15 +6,16 @@
     </Plugin>
   </Plugins>
   <VirtualDirectory Name="include">
-    <File Name="src/mbpoll-gpio-rts.h"/>
+    <File Name="src/custom-rts.h"/>
+    <File Name="src/serial.h"/>
+    <File Name="mbpoll-config.h"/>
   </VirtualDirectory>
   <Description/>
   <Dependencies/>
   <VirtualDirectory Name="src">
-    <File Name="3rdparty/sysio/serial.c"/>
-    <File Name="3rdparty/sysio/delay.c"/>
     <File Name="src/mbpoll.c"/>
-    <File Name="src/RtsPin.cpp"/>
+    <File Name="src/custom-rts.c"/>
+    <File Name="src/serial.c"/>
   </VirtualDirectory>
   <VirtualDirectory Name="resources">
     <File Name="CMakeLists.txt"/>
@@ -117,4 +118,11 @@
       </Completion>
     </Configuration>
   </Settings>
+  <VirtualDirectory Name="doc">
+    <File Name="AUTHORS"/>
+    <File Name="INSTALL"/>
+    <File Name="README.md"/>
+    <File Name="README_FR.md"/>
+    <File Name="COPYING"/>
+  </VirtualDirectory>
 </CodeLite_Project>

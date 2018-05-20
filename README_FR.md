@@ -29,21 +29,48 @@ Le instructions d'installation se trouvent dans le fichier INSTALL.
 
 Par exemple pour un système debian :
 
+* Installer [libmodbus](https://github.com/stephane/libmodbus.git) (Version >= 3.1.4) :
+
+    $ sudo apt-get install build-essential libtool git-core
+    $ git clone https://github.com/stephane/libmodbus.git
+    $ cd libmodbus
+    $ ./autogen.sh
+    $ ./configure
+    $ make -j4
+    $ sudo make install
+
+Vous pouvez aussi l'installer avec `apt` à condition de disposer d'une version supérieure ou égale à 3.1.4. 
+Par exemple pour interroger un système debian:
+
+    $ apt-cache show libmodbus-dev
+
+* Installer [piduino](https://github.com/epsilonrt/piduino/tree/dev) si vous souhaitez gérer le RS485 avec un signal GPIO:
+
+    $ sudo apt-get install libcppdb-dev pkg-config libsqlite3-dev sqlite3
+    $ git clone https://github.com/epsilonrt/piduino.git
+    $ cd piduino 
+    $ git checkout dev
+    $ mkdir build
+    $ cd build
+    $ cmake ..
+    $ make -j4
+    $ sudo make install
+    
 * Installer les dépendances:
 
-        sudo apt-get install build-essential cmake
+    $ sudo apt-get install cmake
 
 * Générer le Makefile avec cmake:
 
-        cd mbpoll
-        mkdir build
-        cd build
-        cmake ..
+    $ cd mbpoll
+    $ mkdir build
+    $ cd build
+    $ cmake ..
 
 * Compiler et installer mbpoll :
 
-        make
-        sudo make install
+    $ make -j4
+    $ sudo make install
 
 Si on le préfère, on peut à la place de la compilation directe créer un package 
 et l'installer:

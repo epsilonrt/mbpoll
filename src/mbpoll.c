@@ -1,12 +1,17 @@
-/**
- * @file mbpoll.c
- * @brief Utilitaire de scrutation ModBus RTU/TCP
- * Inspiré par le programme modpoll de proconX.
+/* Copyright © 2015-2018 Pascal JEAN, All rights reserved.
  *
- * Utilise la bibliothèque libmodbus http://libmodbus.org version >= 3.0
+ * mbpoll is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * Copyright (c) 2015 epsilonRT, All rights reserved.
- * This software is governed by the CeCILL license <http://www.cecill.info>
+ * mbpoll is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with mbpoll.  If not, see <http://www.gnu.org/licenses/>.
  */
 #define _GNU_SOURCE
 
@@ -19,24 +24,40 @@
 #include <getopt.h>
 #include <signal.h>
 #include <float.h>
+#include <inttypes.h>
 #include <assert.h>
-#include <modbus/modbus.h>
-#include <sysio/delay.h>
-#include <sysio/serial.h>
-#include <sysio/compat.h>
+#include <modbus.h>
+#include <Arduino.h>
+#include "serial.h"
+#include "custom-rts.h"
 #include "version-git.h"
 #include "mbpoll-config.h"
-#include "mbpoll-gpio-rts.h"
 
 /* constants ================================================================ */
-#define AUTHORS "epsilonRT"
-#define WEBSITE "http://www.epsilonrt.fr"
+#define AUTHORS "Pascal JEAN"
+#define WEBSITE "https://github.com/epsilonrt/mbpoll"
 
 /* conditionals ============================================================= */
 #if defined(__GNUC__) && __SIZEOF_FLOAT__ != 4 && !defined (__STDC_IEC_559__)
 # error it seems that this platform does not conform to the IEEE-754 standard !
 # define MBPOLL_FLOAT_DISABLE
 #endif
+
+/* macros =================================================================== */
+#define BASENAME(f) (f)
+
+#if !defined(_WIN32) && (defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__)))
+# include <libgen.h>
+# undef BASENAME
+# define BASENAME(f) basename(f)
+#endif
+
+#ifndef NDEBUG
+#define PDEBUG(fmt,...) printf("%s:%d: %s(): " fmt, BASENAME(__FILE__), __LINE__, __FUNCTION__, ##__VA_ARGS__)
+#else
+#define PDEBUG(...)  if (ctx.bIsVerbose) printf(__VA_ARGS__)
+#endif
+
 
 /* types ==================================================================== */
 typedef enum {
@@ -274,14 +295,14 @@ static xChipIoSerial * xChipSerial;
 static const char sChipIoSlaveAddrStr[] = "chipio slave address";
 static const char sChipIoIrqPinStr[] = "chipio irq pin";
 // option -i et -n supplémentaires pour chipio
-static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u0RhVvBqi:n:";
+static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u0RhVvwBqi:n:";
 
 #else /* USE_CHIPIO == 0 */
 /* constants ================================================================ */
 #ifdef MBPOLL_GPIO_RTS
-static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u0R::F::hVvBq";
+static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u0R::F::hVvwBq";
 #else
-static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u0RFhVvBq";
+static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u0RFhVvwBq";
 #endif
 // -----------------------------------------------------------------------------
 #endif /* USE_CHIPIO == 0 */
@@ -294,6 +315,7 @@ void vPrintCommunicationSetup (const xMbPollContext * ctx);
 void vReportSlaveID (const xMbPollContext * ctx);
 void vHello (void);
 void vVersion (void);
+void vWarranty (void);
 void vUsage (FILE *stream, int exit_msg);
 void vFailureExit (bool bHelp, const char *format, ...);
 #define vSyntaxErrorExit(fmt,...) vFailureExit(true,fmt,##__VA_ARGS__)
@@ -394,7 +416,7 @@ main (int argc, char **argv) {
 
       case 'v':
         ctx.bIsVerbose = true;
-        PDEBUG ("debug enabled");
+        PDEBUG ("debug enabled\n");
         break;
 
       case 'm':
@@ -530,6 +552,10 @@ main (int argc, char **argv) {
       case 'V':
         vVersion();
         break;
+        
+      case 'w':
+        vWarranty();
+        break;
 
       case '?': /* An invalid option has been used */
         vSyntaxErrorExit ("Unrecognized option or missing option parameter");
@@ -567,7 +593,7 @@ main (int argc, char **argv) {
 
     // Mode par défaut si port série
     ctx.eMode = eModeRtu;
-    PDEBUG ("Set mode to RTU for serial port");
+    PDEBUG ("Set mode to RTU for serial port\n");
   }
 #ifdef USE_CHIPIO
 // -----------------------------------------------------------------------------
@@ -603,11 +629,11 @@ main (int argc, char **argv) {
 
     ctx.eMode = eModeRtu;
     ctx.bIsChipIo = true;
-    PDEBUG ("Set mode to RTU for chipio serial port");
+    PDEBUG ("Set mode to RTU for chipio serial port\n");
   }
 // -----------------------------------------------------------------------------
 #endif /* USE_CHIPIO defined */
-  PDEBUG ("Set device=%s", ctx.sDevice);
+  PDEBUG ("Set device=%s\n", ctx.sDevice);
 
   if ( (ctx.bIsReportSlaveID) && (ctx.eMode != eModeRtu)) {
 
@@ -626,7 +652,7 @@ main (int argc, char **argv) {
       }
       ctx.bIsPolling = false;
       ctx.iCount = iNbToWrite;
-      PDEBUG ("%d write data have been found", iNbToWrite);
+      PDEBUG ("%d write data have been found\n", iNbToWrite);
     }
     else {
       ctx.bIsWrite = false;
@@ -654,27 +680,27 @@ main (int argc, char **argv) {
             iValue = iGetInt (sDataStr, argv[arg], 10);
             vCheckIntRange (sDataStr, iValue, 0, 1);
             DUINT8 (ctx.pvData, i) = (uint8_t) iValue;
-            PDEBUG ("Byte[%d]=%d", i, DUINT8 (ctx.pvData, i));
+            PDEBUG ("Byte[%d]=%d\n", i, DUINT8 (ctx.pvData, i));
             break;
             break;
 
           case eFuncHoldingReg:
             if (ctx.eFormat == eFormatInt) {
               DINT32 (ctx.pvData, i) = lSwapLong (iGetInt (sDataStr, argv[arg], 10));
-              PDEBUG ("Int[%d]=%l", i, lSwapLong (DINT32 (ctx.pvData, i)));
+              PDEBUG ("Int[%d]=%"PRId32"\n", i, lSwapLong (DINT32 (ctx.pvData, i)));
             }
             else if (ctx.eFormat == eFormatFloat) {
               dValue = dGetDouble (sDataStr, argv[arg]);
               PDEBUG ("%g,%g\n", FLT_MIN, FLT_MAX);
               vCheckDoubleRange (sDataStr, dValue, -FLT_MAX, FLT_MAX);
               DFLOAT (ctx.pvData, i) = fSwapFloat ( (float) dValue);
-              PDEBUG ("Float[%d]=%g", i, fSwapFloat (DFLOAT (ctx.pvData, i)));
+              PDEBUG ("Float[%d]=%g\n", i, fSwapFloat (DFLOAT (ctx.pvData, i)));
             }
             else {
               iValue = iGetInt (sDataStr, argv[arg], 0);
               vCheckIntRange (sDataStr, iValue, 0, UINT16_MAX);
               DUINT16 (ctx.pvData, i) = (uint16_t) iValue;
-              PDEBUG ("Word[%d]=0x%X", i, DUINT16 (ctx.pvData, i));
+              PDEBUG ("Word[%d]=0x%X\n", i, DUINT16 (ctx.pvData, i));
             }
             break;
 
@@ -737,11 +763,11 @@ main (int argc, char **argv) {
 #ifdef MBPOLL_GPIO_RTS
     if (ctx.iRtsPin >= 0) {
 
-      if (init_gpio_rts (ctx.iRtsPin, ctx.iRtuMode == MODBUS_RTU_RTS_UP) != 0) {
+      if (init_custom_rts (ctx.iRtsPin, ctx.iRtuMode == MODBUS_RTU_RTS_UP) != 0) {
 
         vIoErrorExit ("Unable to set GPIO RTS pin: %d", ctx.iRtsPin);
       }
-      modbus_rtu_set_custom_rts (ctx.xBus, set_gpio_rts);
+      modbus_rtu_set_custom_rts (ctx.xBus, set_custom_rts);
       modbus_rtu_set_rts_delay (ctx.xBus, 2000);
     }
 #endif
@@ -761,19 +787,19 @@ main (int argc, char **argv) {
    * évites que l'esclave prenne l'impulsion de 40µs créée par le driver à
    * l'ouverture du port comme un bit de start.
    */
-  delay_ms (20);
+  delay (20);
 
   // Réglage du timeout de réponse
   uint32_t  sec, usec;
 #ifdef DEBUG
 
   modbus_get_byte_timeout (ctx.xBus, &sec, &usec);
-  PDEBUG ("Get byte timeout: %d s, %d us", sec, usec);
+  PDEBUG ("Get byte timeout: %d s, %d us\n", sec, usec);
 #endif
   sec = (uint32_t) ctx.dTimeout;
   usec = (uint32_t) ( (ctx.dTimeout - sec) * 1E6);
   modbus_set_response_timeout (ctx.xBus, sec, usec);
-  PDEBUG ("Set response timeout to %ld sec, %ld us", sec, usec);
+  PDEBUG ("Set response timeout to %"PRIu32" sec, %"PRIu32" us\n", sec, usec);
 
   // vSigIntHandler() intercepte le CTRL+C
   signal (SIGINT, vSigIntHandler);
@@ -862,6 +888,7 @@ main (int argc, char **argv) {
           if (ctx.bIsPolling) {
 
             printf (" Ctrl-C to stop)\n");
+            // setPriority (50);
           }
           else {
 
@@ -906,7 +933,7 @@ main (int argc, char **argv) {
           }
           if (ctx.bIsPolling) {
 
-            delay_ms (ctx.iPollRate);
+            delay (ctx.iPollRate);
           }
         }
         // Fin lecture ---------------------------------------------------------
@@ -1223,12 +1250,35 @@ vVersion (void)  {
 
 // -----------------------------------------------------------------------------
 void
+vWarranty (void) {
+  printf (
+    "Copyright © 2015-2018 %s, All rights reserved.\n\n"
+
+    " mbpoll is free software: you can redistribute it and/or modify\n"
+    " it under the terms of the GNU General Public License as published by\n"
+    " the Free Software Foundation, either version 3 of the License, or\n"
+    " (at your option) any later version.\n\n"
+
+    " mbpoll is distributed in the hope that it will be useful,\n"
+    " but WITHOUT ANY WARRANTY; without even the implied warranty of\n"
+    " MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n"
+    " GNU General Public License for more details.\n\n"
+
+    " You should have received a copy of the GNU General Public License\n"
+    " along with mbpoll. If not, see <http://www.gnu.org/licenses/>.\n",
+    AUTHORS);
+  exit (EXIT_SUCCESS);
+}
+
+// -----------------------------------------------------------------------------
+  void
 vHello (void) {
-  printf ("%s %s - FieldTalk(tm) Modbus(R) Master Simulator\n",
-          basename (progname), VERSION_SHORT);
-  printf ("Copyright (c) 2015 %s, All rights reserved.\n"
-          "This software is governed by the CeCILL license <http://www.cecill.info>\n\n"
-          , AUTHORS);
+  printf ("mbpoll %s - FieldTalk(tm) Modbus(R) Master Simulator\n",
+          VERSION_SHORT);
+  printf ("Copyright © 2015-2018 %s, %s\n", AUTHORS, WEBSITE);
+  printf ("This program comes with ABSOLUTELY NO WARRANTY.\n");
+  printf ("This is free software, and you are welcome to redistribute it\n");
+  printf ("under certain conditions; type 'mbpoll -w' for details.\n\n");
 }
 
 // -----------------------------------------------------------------------------
@@ -1394,13 +1444,13 @@ vCheckDoubleRange (const char * sName, double d, double min, double max) {
 // -----------------------------------------------------------------------------
 int
 iGetEnum (const char * sName, char * sElmt, const char ** psStrList,
-          const int * iList, int iSize) {
+const int * iList, int iSize) {
   int i;
   for (i = 0; i < iSize; i++) {
 
     if (strcasecmp (sElmt, psStrList[i]) == 0) {
 
-      PDEBUG ("Set %s=%s", sName, strlwr (sElmt));
+      PDEBUG ("Set %s=%s\n", sName, strlwr (sElmt));
       return iList[i];
     }
   }
@@ -1464,7 +1514,7 @@ iGetIntList (const char * name, const char * sList, int * iLen) {
   const char * p = sList;
   char * endptr;
 
-  PDEBUG ("iGetIntList(%s)", sList);
+  PDEBUG ("iGetIntList(%s)\n", sList);
 
   // Comptage et vérification de la liste des entiers
   while (*p) {
@@ -1475,7 +1525,7 @@ iGetIntList (const char * name, const char * sList, int * iLen) {
       vSyntaxErrorExit ("Illegal %s value: %s", name, p);
     }
     p = endptr;
-    PDEBUG ("Integer found: %d", i);
+    PDEBUG ("Integer found: %d\n", i);
 
     if (*p == ':') {
 
@@ -1484,7 +1534,7 @@ iGetIntList (const char * name, const char * sList, int * iLen) {
         // il ne peut pas y avoir 2 * ':' de suite !
         vSyntaxErrorExit ("Illegal %s delimiter: '%c'", name, *p);
       }
-      PDEBUG ("Is First");
+      PDEBUG ("Is First\n");
       iFirst = i;
       bIsLast = true;
     }
@@ -1497,7 +1547,7 @@ iGetIntList (const char * name, const char * sList, int * iLen) {
         iLast = MAX (iFirst, i);
         iFirst = MIN (iFirst, i);
         iRange = iLast - iFirst + 1;
-        PDEBUG ("Is Last, add %d items", iRange);
+        PDEBUG ("Is Last, add %d items\n", iRange);
         iCount += iRange;
         bIsLast = false;
       }
@@ -1515,7 +1565,7 @@ iGetIntList (const char * name, const char * sList, int * iLen) {
 
       p++; // On passe le délimiteur
     }
-    PDEBUG ("iCount=%d", iCount);
+    PDEBUG ("iCount=%d\n", iCount);
   }
 
   if (iCount > 0) {
@@ -1584,7 +1634,7 @@ iGetInt (const char * name, const char * num, int base) {
     vSyntaxErrorExit ("Illegal %s value: %s", name, num);
   }
 
-  PDEBUG ("Set %s=%d", name, i);
+  PDEBUG ("Set %s=%d\n", name, i);
   return i;
 }
 
@@ -1599,7 +1649,7 @@ dGetDouble (const char * name, const char * num) {
     vSyntaxErrorExit ("Illegal %s value: %s", name, num);
   }
 
-  PDEBUG ("Set %s=%g", name, d);
+  PDEBUG ("Set %s=%g\n", name, d);
   return d;
 }
 
