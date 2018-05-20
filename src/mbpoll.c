@@ -465,7 +465,7 @@ main (int argc, char **argv) {
         break;
 
       case 'R':
-        ctx.iRtuMode = MODBUS_RTU_RTS_UP;
+        ctx.iRtuMode = MODBUS_RTU_RTS_DOWN;
 #ifdef MBPOLL_GPIO_RTS
         if (optarg) {
           ctx.iRtsPin = iGetInt (sRtsPinStr, optarg, 10);
@@ -474,7 +474,7 @@ main (int argc, char **argv) {
         break;
 
       case 'F':
-        ctx.iRtuMode = MODBUS_RTU_RTS_DOWN;
+        ctx.iRtuMode = MODBUS_RTU_RTS_UP;
 #ifdef MBPOLL_GPIO_RTS
         if (optarg) {
           ctx.iRtsPin = iGetInt (sRtsPinStr, optarg, 10);
@@ -762,13 +762,14 @@ main (int argc, char **argv) {
 
 #ifdef MBPOLL_GPIO_RTS
     if (ctx.iRtsPin >= 0) {
-
+      double t = 11 / (double) ctx.xRtu.baud / 2 * 1e6; // delay 1/2 car
+      
       if (init_custom_rts (ctx.iRtsPin, ctx.iRtuMode == MODBUS_RTU_RTS_UP) != 0) {
 
         vIoErrorExit ("Unable to set GPIO RTS pin: %d", ctx.iRtsPin);
       }
       modbus_rtu_set_custom_rts (ctx.xBus, set_custom_rts);
-      modbus_rtu_set_rts_delay (ctx.xBus, 2000);
+      modbus_rtu_set_rts_delay (ctx.xBus, (int)t);
     }
 #endif
     modbus_rtu_set_serial_mode (ctx.xBus, MODBUS_RTU_RS485);
