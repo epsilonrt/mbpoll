@@ -55,11 +55,6 @@ if (piduino_FOUND)
   endif(PIDUINO_WITH_GPIO)
   include_directories(BEFORE ${PIDUINO_INCLUDE_DIRS})
   list(APPEND LINK_OPTIONS ${PIDUINO_LIBRARIES})
-  include (PiBoardInfo)
-  if (NOT PIBOARD_ID)
-    message (STATUS "Check the target platform, you can use PIBOARD_ID to force the target...")
-    GetPiBoardInfo()
-  endif (NOT PIBOARD_ID)
   set(PROGRAM_PERMISSIONS
     OWNER_WRITE OWNER_READ OWNER_EXECUTE
     GROUP_READ GROUP_EXECUTE
@@ -67,6 +62,7 @@ if (piduino_FOUND)
     SETUID)
 
 else (piduino_FOUND)
+  message (STATUS "PiDuino not found, disable MBPOLL_GPIO_RTS !")
   set(PROGRAM_PERMISSIONS
     OWNER_WRITE OWNER_READ OWNER_EXECUTE
     GROUP_READ GROUP_EXECUTE
