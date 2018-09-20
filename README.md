@@ -30,13 +30,13 @@ For example, for a debian system:
 
 * Install [libmodbus](https://github.com/stephane/libmodbus.git) (Version >= 3.1.4) :
 
-    $ sudo apt-get install build-essential libtool git-core
-    $ git clone https://github.com/stephane/libmodbus.git
-    $ cd libmodbus
-    $ ./autogen.sh
-    $ ./configure
-    $ make -j4
-    $ sudo make install
+        $ sudo apt-get install build-essential libtool git-core
+        $ git clone https://github.com/stephane/libmodbus.git
+        $ cd libmodbus
+        $ ./autogen.sh
+        $ ./configure
+        $ make -j4
+        $ sudo make install
 
 You can also install it with `apt` if the version of libmodbus is greater than or equal to 3.1.4.
 For example to query a debian system:
