@@ -508,12 +508,12 @@ main (int argc, char **argv) {
         ctx.bIsQuiet = true;
         break;
 
-      // TCP -----------------------------------------------------------------
+        // TCP -----------------------------------------------------------------
       case 'p':
         ctx.sTcpPort = optarg;
         break;
 
-      // RTU -----------------------------------------------------------------
+        // RTU -----------------------------------------------------------------
       case 'b':
         ctx.xRtu.baud = iGetInt (sRtuBaudrateStr, optarg, 0);
         vCheckIntRange (sRtuBaudrateStr, ctx.xRtu.baud, RTU_BAUDRATE_MIN,
@@ -534,7 +534,7 @@ main (int argc, char **argv) {
 
 #ifdef USE_CHIPIO
 // -----------------------------------------------------------------------------
-      // ChipIo --------------------------------------------------------------
+        // ChipIo --------------------------------------------------------------
       case 'i':
         iChipIoSlaveAddr = iGetInt (sChipIoSlaveAddrStr, optarg, 0);
         vCheckIntRange (sChipIoSlaveAddrStr, iChipIoSlaveAddr,
@@ -549,7 +549,7 @@ main (int argc, char **argv) {
 // -----------------------------------------------------------------------------
 #endif /* USE_CHIPIO defined */
 
-      // Misc. ---------------------------------------------------------------
+        // Misc. ---------------------------------------------------------------
       case 'h':
         vUsage (stdout, EXIT_SUCCESS);
         break;
@@ -1222,7 +1222,7 @@ vSigIntHandler (int sig) {
     putchar ('\n');
   }
   fflush (stdout);
-  exit (EXIT_SUCCESS);
+  exit (ctx.iErrorCount == 0 ? EXIT_SUCCESS : EXIT_FAILURE);
 }
 
 // -----------------------------------------------------------------------------
