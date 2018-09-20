@@ -14,7 +14,7 @@
  * along with mbpoll.  If not, see <http://www.gnu.org/licenses/>.
  */
 #ifdef MBPOLL_GPIO_RTS
-#include <Arduino.h>
+#include <piduino/arduino.h>
 #include <stdio.h>
 #include "custom-rts.h"
 
