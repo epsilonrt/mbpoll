@@ -1,6 +1,6 @@
 # mbpoll
 
-> Copyright © 2015 epsilonRT, All rights reserved.  
+> Copyright © 2015-2018 epsilonRT, All rights reserved.  
 
 
 ## Presentation
@@ -30,12 +30,12 @@ For example, for a debian system:
 
 * Install [libmodbus](https://github.com/stephane/libmodbus.git) (Version >= 3.1.4) :
 
-        $ sudo apt-get install build-essential libtool git-core
+        $ sudo apt-get install build-essential libtool git-core autoconf
         $ git clone https://github.com/stephane/libmodbus.git
         $ cd libmodbus
         $ ./autogen.sh
         $ ./configure
-        $ make -j4
+        $ make
         $ sudo make install
 
 You can also install it with `apt` if the version of libmodbus is greater than or equal to 3.1.4.
@@ -43,34 +43,35 @@ For example to query a debian system:
 
     $ apt-cache show libmodbus-dev
 
-* Install [piduino](https://github.com/epsilonrt/piduino/tree/dev) if you want to manage the RS485 with a GPIO signal:
+* Install [piduino](https://github.com/epsilonrt/piduino/tree/dev) **only if you want to manage the RS485 with a GPIO signal**:
 
-    $ sudo apt-get install libcppdb-dev pkg-config libsqlite3-dev sqlite3
-    $ git clone https://github.com/epsilonrt/piduino.git
-    $ cd piduino 
-    $ git checkout dev
-    $ mkdir build
-    $ cd build
-    $ cmake ..
-    $ make -j4
-    $ sudo make install
+        $ sudo apt-get install libcppdb-dev pkg-config libsqlite3-dev sqlite3
+        $ git clone https://github.com/epsilonrt/piduino.git
+        $ cd piduino 
+        $ git checkout dev
+        $ mkdir build
+        $ cd build
+        $ cmake ..
+        $ make
+        $ sudo make install
     
 * Generate Makefile with cmake:
 
-        cd mbpoll
-        mkdir build
-        cd build
-        cmake ..
+        $ cd mbpoll
+        $ mkdir build
+        $ cd build
+        $ cmake ..
 
 * Compile and install mbpoll:
 
-        make -j4
-        sudo make install
+        $ make
+        $ sudo make install
+        $ sudo ldconfig
 
 If you prefer, you can in the place of direct compilation create a package and install it:
 
-        make package
-        sudo dpkg -i * .deb
+        $ make package
+        $ sudo dpkg -i * .deb
 
 That's all !
 
@@ -81,7 +82,7 @@ slave at address 33 connected through RTU /dev/ttyUSB2 (38400 Bd)
 
 ---
 
-        mbpoll -a 33 -b 38400 -t 3 -r 1 -c 2 /dev/ttyUSB2
+        $ mbpoll -a 33 -b 38400 -t 3 -r 1 -c 2 /dev/ttyUSB2
         
         mbpoll 0.1-10 - FieldTalk(tm) Modbus(R) Master Simulator
         Copyright (c) 2015 epsilonRT, All rights reserved.
