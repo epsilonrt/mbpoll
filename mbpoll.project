@@ -120,9 +120,7 @@
   </Settings>
   <VirtualDirectory Name="doc">
     <File Name="AUTHORS"/>
-    <File Name="INSTALL"/>
     <File Name="README.md"/>
-    <File Name="README_FR.md"/>
     <File Name="COPYING"/>
   </VirtualDirectory>
 </CodeLite_Project>

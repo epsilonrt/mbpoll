@@ -24,8 +24,6 @@ floating single precision.
 
 ## Installation
 
-The installation instructions are in the INSTALL file.
-
 For example, for a debian system:
 
 * Install [libmodbus](https://github.com/stephane/libmodbus.git) (Version >= 3.1.4) :
