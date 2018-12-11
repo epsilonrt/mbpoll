@@ -43,7 +43,7 @@ For example to query a debian system:
 
 * Install [piduino](https://github.com/epsilonrt/piduino/tree/dev) **only if you want to manage the RS485 with a GPIO signal**:
 
-        $ sudo apt-get install libcppdb-dev pkg-config libsqlite3-dev sqlite3
+        $ sudo apt-get install cmake libcppdb-dev pkg-config libsqlite3-dev sqlite3
         $ git clone https://github.com/epsilonrt/piduino.git
         $ cd piduino 
         $ git checkout dev
@@ -55,6 +55,7 @@ For example to query a debian system:
     
 * Generate Makefile with cmake:
 
+        $ sudo apt-get install cmake pkg-config
         $ cd mbpoll
         $ mkdir build
         $ cd build
