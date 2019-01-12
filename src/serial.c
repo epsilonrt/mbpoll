@@ -1,4 +1,4 @@
-/* Copyright © 2015-2018 Pascal JEAN, All rights reserved.
+/* Copyright © 2015-2019 Pascal JEAN, All rights reserved.
  *
  * mbpoll is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

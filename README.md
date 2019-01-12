@@ -1,6 +1,6 @@
 # mbpoll
 
-> Copyright © 2015-2018 epsilonRT, All rights reserved.  
+> Copyright © 2015-2019 epsilonRT, All rights reserved.  
 
 
 ## Presentation
@@ -22,7 +22,33 @@ mbpoll can:
 The reading and writing registers may be in decimal, hexadecimal or 
 floating single precision.
 
-## Installation
+## Quickstart guide
+
+The fastest and safest way to install mbpoll is to use the APT 
+repository from [piduino.org](http://apt.piduino.org), so you should do the following :
+
+    wget -O- http://www.piduino.org/piduino-key.asc | sudo apt-key add -
+    sudo add-apt-repository 'deb http://apt.piduino.org stretch piduino'
+    sudo apt update
+    sudo apt install mbpoll
+
+This repository provides `mbpoll` and `libmodbus` (version 3.1.4) packages for 
+`i386`, `amd64`, `armhf` and `arm64` architectures.
+In the above commands, the repository is a Debian Stretch distribution, but you 
+can also choose Ubuntu Xenial by replacing `stretch` with `xenial`.  
+It may be necessary to install the `software-properties-common` 
+package for `add-apt-repository`.
+
+For Raspbian you have to do a little different :
+
+    wget -O- http://www.piduino.org/piduino-key.asc | sudo apt-key add -
+    echo 'deb http://raspbian.piduino.org stretch piduino' | sudo tee /etc/apt/sources.list.d/piduino.list
+    sudo apt update
+    sudo apt install mbpoll
+
+The Raspbian repository provides Piduino packages for `armhf` architecture for Stretch only.
+
+## Build from source
 
 For example, for a debian system:
 
@@ -175,7 +201,7 @@ A complete help is available with the -h option:
                     its progress.  This is helpful in debugging connection...
 
 ---
-> Copyright © 2015-2018 Pascal JEAN, All rights reserved.
+> Copyright © 2015-2019 Pascal JEAN, All rights reserved.
 
 > mbpoll is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

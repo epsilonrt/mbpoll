@@ -1,4 +1,4 @@
-/* Copyright © 2015-2018 Pascal JEAN, All rights reserved.
+/* Copyright © 2015-2019 Pascal JEAN, All rights reserved.
  *
  * mbpoll is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -1257,7 +1257,7 @@ vVersion (void)  {
 void
 vWarranty (void) {
   printf (
-    "Copyright © 2015-2018 %s, All rights reserved.\n\n"
+    "Copyright © 2015-2019 %s, All rights reserved.\n\n"
 
     " mbpoll is free software: you can redistribute it and/or modify\n"
     " it under the terms of the GNU General Public License as published by\n"
@@ -1280,7 +1280,7 @@ void
 vHello (void) {
   printf ("mbpoll %s - FieldTalk(tm) Modbus(R) Master Simulator\n",
           VERSION_SHORT);
-  printf ("Copyright © 2015-2018 %s, %s\n", AUTHORS, WEBSITE);
+  printf ("Copyright © 2015-2019 %s, %s\n", AUTHORS, WEBSITE);
   printf ("This program comes with ABSOLUTELY NO WARRANTY.\n");
   printf ("This is free software, and you are welcome to redistribute it\n");
   printf ("under certain conditions; type 'mbpoll -w' for details.\n\n");
