@@ -1,0 +1,14 @@
+mbpoll is a command line utility to communicate with ModBus slave (RTU or TCP).  
+It uses libmodbus (http://libmodbus.org/).  
+Although the syntax of these options is very close modpoll proconX program,
+it is a completely independent project.
+
+mbpoll can:
+
+- read discrete inputs
+- read and write binary outputs (*coil*)
+- read input registers
+- read and write output registers (*holding register*)
+
+The reading and writing registers may be in decimal, hexadecimal or 
+floating single precision.

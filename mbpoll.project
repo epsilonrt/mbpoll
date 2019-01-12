@@ -19,13 +19,21 @@
   </VirtualDirectory>
   <VirtualDirectory Name="resources">
     <File Name="CMakeLists.txt"/>
+    <File Name="cmake_uninstall.cmake.in"/>
   </VirtualDirectory>
   <Dependencies Name="Debug"/>
   <Dependencies Name="Release"/>
+  <VirtualDirectory Name="doc">
+    <File Name="AUTHORS"/>
+    <File Name="README.md"/>
+    <File Name="COPYING"/>
+  </VirtualDirectory>
   <Settings Type="Executable">
     <GlobalSettings>
       <Compiler Options="" C_Options="" Assembler="">
         <IncludePath Value="."/>
+        <IncludePath Value="src"/>
+        <IncludePath Value="${CMAKE_CURRENT_BINARY_DIR}"/>
       </Compiler>
       <Linker Options="">
         <LibraryPath Value="."/>
@@ -33,16 +41,11 @@
       <ResourceCompiler Options=""/>
     </GlobalSettings>
     <Configuration Name="Debug" CompilerType="gnu gcc" DebuggerType="GNU gdb debugger" Type="Executable" BuildCmpWithGlobalSettings="append" BuildLnkWithGlobalSettings="append" BuildResWithGlobalSettings="append">
-      <Compiler Options="-g;-O0;-Wall" C_Options="-g;-O0;-Wall;-Wno-unused-parameter;-Wno-unused-function;-Wno-unused-const-variable" Assembler="" Required="yes" PreCompiledHeader="" PCHInCommandLine="no" PCHFlags="" PCHFlagsPolicy="0">
-        <IncludePath Value="src"/>
-        <IncludePath Value="3rdparty"/>
-        <IncludePath Value="3rdparty/modbus"/>
-        <IncludePath Value="${CMAKE_CURRENT_BINARY_DIR}"/>
-      </Compiler>
+      <Compiler Options="-g;-O0;-Wall" C_Options="-g;-O0;-Wall;-Wno-unused-parameter;-Wno-unused-function;-Wno-unused-const-variable" Assembler="" Required="yes" PreCompiledHeader="" PCHInCommandLine="no" PCHFlags="" PCHFlagsPolicy="0"/>
       <Linker Options="" Required="yes"/>
       <ResourceCompiler Options="" Required="no"/>
       <General OutputFile="" IntermediateDirectory="./Debug" Command="$(WorkspacePath)/cmake-build-$(WorkspaceConfiguration)/output/$(ProjectName)" CommandArguments="-a33 -b38400 -t3 -c2 -4 4 /dev/ttyS1" UseSeparateDebugArgs="no" DebugArguments="" WorkingDirectory="$(IntermediateDirectory)" PauseExecWhenProcTerminates="yes" IsGUIProgram="no" IsEnabled="yes"/>
-      <BuildSystem Name="CMake">-DCL_USED=1</BuildSystem>
+      <BuildSystem Name="CMake">-DCL_USED=1 -DCMAKE_BUILD_TYPE=Debug</BuildSystem>
       <Environment EnvVarSetName="&lt;Use Defaults&gt;" DbgSetName="&lt;Use Defaults&gt;">
         <![CDATA[]]>
       </Environment>
@@ -76,10 +79,6 @@
     </Configuration>
     <Configuration Name="Release" CompilerType="gnu gcc" DebuggerType="GNU gdb debugger" Type="Executable" BuildCmpWithGlobalSettings="append" BuildLnkWithGlobalSettings="append" BuildResWithGlobalSettings="append">
       <Compiler Options="-O2;-Wall" C_Options="-O2;-Wall;-Wno-unused-parameter;-Wno-unused-function;-Wno-unused-const-variable" Assembler="" Required="yes" PreCompiledHeader="" PCHInCommandLine="no" PCHFlags="" PCHFlagsPolicy="0">
-        <IncludePath Value="src"/>
-        <IncludePath Value="3rdparty"/>
-        <IncludePath Value="3rdparty/modbus"/>
-        <IncludePath Value="${CMAKE_CURRENT_BINARY_DIR}"/>
         <Preprocessor Value="NDEBUG"/>
       </Compiler>
       <Linker Options="" Required="yes"/>
@@ -118,9 +117,4 @@
       </Completion>
     </Configuration>
   </Settings>
-  <VirtualDirectory Name="doc">
-    <File Name="AUTHORS"/>
-    <File Name="README.md"/>
-    <File Name="COPYING"/>
-  </VirtualDirectory>
 </CodeLite_Project>

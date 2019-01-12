@@ -27,6 +27,8 @@ set(PROJECT_PATH "${CMAKE_SOURCE_DIR}/")
 #{{{{ User Code 1
 # Place your code here
 # Modifies binary file paths if codelite is not used.
+set (MBPOLL_CUSTOM_RTS_GPIO 1 CACHE BOOL "Enable custom Rts (if libpiduino found, only on ARM)")
+
 if (NOT CL_USED)
   set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
@@ -47,27 +49,31 @@ list(APPEND LINK_OPTIONS ${LIBMODBUS_LIBRARIES})
 # search for the piduino package, if found, add the options ...
 find_package(piduino QUIET)
 if (piduino_FOUND)
+
   message (STATUS "PiDuino found !")
-  link_directories(${PIDUINO_LIBRARY_DIRS})
-  add_definitions(${PIDUINO_CFLAGS})
   if(PIDUINO_WITH_GPIO)
+    link_directories(${PIDUINO_LIBRARY_DIRS})
+    add_definitions(${PIDUINO_CFLAGS})
     add_definitions(-DMBPOLL_GPIO_RTS)
+    include_directories(BEFORE ${PIDUINO_INCLUDE_DIRS})
+    list(APPEND LINK_OPTIONS ${PIDUINO_LIBRARIES})
+    set(PROGRAM_PERMISSIONS
+      OWNER_WRITE OWNER_READ OWNER_EXECUTE
+      GROUP_READ GROUP_EXECUTE
+      WORLD_READ WORLD_EXECUTE
+      SETUID)
   endif(PIDUINO_WITH_GPIO)
-  include_directories(BEFORE ${PIDUINO_INCLUDE_DIRS})
-  list(APPEND LINK_OPTIONS ${PIDUINO_LIBRARIES})
-  set(PROGRAM_PERMISSIONS
-    OWNER_WRITE OWNER_READ OWNER_EXECUTE
-    GROUP_READ GROUP_EXECUTE
-    WORLD_READ WORLD_EXECUTE
-    SETUID)
 
 else (piduino_FOUND)
   message (STATUS "PiDuino not found, disable MBPOLL_GPIO_RTS !")
+endif (piduino_FOUND)
+
+if(NOT PIDUINO_WITH_GPIO)
   set(PROGRAM_PERMISSIONS
     OWNER_WRITE OWNER_READ OWNER_EXECUTE
     GROUP_READ GROUP_EXECUTE
     WORLD_READ WORLD_EXECUTE)
-endif (piduino_FOUND)
+endif(NOT PIDUINO_WITH_GPIO)
 
 include (GitVersion)
 GetGitVersion(MBPOLL_VERSION)
@@ -82,8 +88,6 @@ set (PROJECT_DESCRIPTION "ModBus Master Simulator")
 include_directories(
     .
     src
-    3rdparty
-    3rdparty/modbus
     ${CMAKE_CURRENT_BINARY_DIR}
 
 )
@@ -131,6 +135,14 @@ endif(WIN32)
 
 #{{{{ User Code 2
 # Place your code here
+# uninstall target
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake_uninstall.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
+    IMMEDIATE @ONLY)
+add_custom_target(uninstall
+    COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake)
+
 #}}}}
 
 add_executable(mbpoll ${RC_SRCS} ${CXX_SRCS} ${C_SRCS})
@@ -144,11 +156,14 @@ install(TARGETS mbpoll RUNTIME DESTINATION bin
         PERMISSIONS ${PROGRAM_PERMISSIONS})
 
 ### Debian Package generation
-set(CPACK_PACKAGE_VERSION "${MBPOLL_VERSION_MAJOR}.${MBPOLL_VERSION_MINOR}-${MBPOLL_VERSION_PATCH}")
+set(CPACK_PACKAGE_NAME ${PROJECT_NAME})
+set(CPACK_PACKAGE_VERSION "${MBPOLL_VERSION_MAJOR}.${MBPOLL_VERSION_MINOR}.${MBPOLL_VERSION_PATCH}")
 set(CPACK_PACKAGE_VERSION_MAJOR "${MBPOLL_VERSION_MAJOR}")
 set(CPACK_PACKAGE_VERSION_MINOR "${MBPOLL_VERSION_MINOR}")
 set(CPACK_PACKAGE_VERSION_PATCH "${MBPOLL_VERSION_PATCH}")
-set(CPACK_PACKAGE_CONTACT "Pascal JEAN <epsilonrt@gmail.com>")
+set(CPACK_PACKAGE_CONTACT "Pascal JEAN <pascal.jean@piduino.org>")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${PROJECT_NAME} - ${PROJECT_DESCRIPTION}")
+set(CPACK_PACKAGE_DESCRIPTION_FILE "${PROJECT_SOURCE_DIR}/package_description.txt")
 set(CPACK_RESOURCE_FILE_LICENSE "${PROJECT_SOURCE_DIR}/COPYING")
 
 set(CPACK_GENERATOR "DEB")
@@ -156,7 +171,7 @@ set(CPACK_GENERATOR "DEB")
 if (CPACK_GENERATOR STREQUAL "DEB")
 
   set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "https://github.com/epsilonrt/mbpoll")
-
+  
   find_program(dpkg_query NAMES dpkg-query)
   find_program(dpkg_cmd NAMES dpkg)
 
@@ -173,10 +188,14 @@ if (CPACK_GENERATOR STREQUAL "DEB")
 
   message(STATUS "Debian architecture ${CPACK_DEBIAN_PACKAGE_ARCHITECTURE}")
 
-  set(CPACK_DEBIAN_PACKAGE_NAME ${PROJECT_NAME})
-  set(CPACK_COMPONENT_DESCRIPTION "${PROJECT_DESCRIPTION}")
-  set(CPACK_DEBIAN_FILE_NAME "${PROJECT_NAME}_${CPACK_PACKAGE_VERSION}_${CPACK_DEBIAN_PACKAGE_ARCHITECTURE}.deb")
-  #set(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6 (>= ${libc6_ver}), libgcc1 (>= ${libgcc1_ver}), libsqlite3 (>= ${libsqlite3_ver})")
+  set(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}_${CPACK_PACKAGE_VERSION}_${CPACK_DEBIAN_PACKAGE_ARCHITECTURE}")
+  message(STATUS "Debian package name is ${CPACK_PACKAGE_FILE_NAME}.deb")
+  
+  if(PIDUINO_WITH_GPIO)
+    set(CPACK_DEBIAN_PACKAGE_DEPENDS "libmodbus5  (>= 3.1.4),libpiduino (>= ${PIDUINO_VERSION_MAJOR}.${PIDUINO_VERSION_MINOR}.${PIDUINO_VERSION_PATCH})")
+  else(PIDUINO_WITH_GPIO)
+    set(CPACK_DEBIAN_PACKAGE_DEPENDS "libmodbus5  (>= 3.1.4)")
+  endif(PIDUINO_WITH_GPIO)
   set(CPACK_DEBIAN_PACKAGE_SECTION "utils")
 endif (CPACK_GENERATOR STREQUAL "DEB")
 
