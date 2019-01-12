@@ -47,10 +47,10 @@ include_directories(BEFORE ${LIBMODBUS_INCLUDE_DIRS})
 list(APPEND LINK_OPTIONS ${LIBMODBUS_LIBRARIES})
 
 # search for the piduino package, if found, add the options ...
-find_package(piduino QUIET)
-if (piduino_FOUND)
+find_package(PIDUINO QUIET)
+if (PIDUINO_FOUND)
 
-  message (STATUS "PiDuino found !")
+  message (STATUS "PiDuino ${PIDUINO_VERSION} found !")
   if(PIDUINO_WITH_GPIO)
     link_directories(${PIDUINO_LIBRARY_DIRS})
     add_definitions(${PIDUINO_CFLAGS})
@@ -64,9 +64,9 @@ if (piduino_FOUND)
       SETUID)
   endif(PIDUINO_WITH_GPIO)
 
-else (piduino_FOUND)
+else (PIDUINO_FOUND)
   message (STATUS "PiDuino not found, disable MBPOLL_GPIO_RTS !")
-endif (piduino_FOUND)
+endif (PIDUINO_FOUND)
 
 if(NOT PIDUINO_WITH_GPIO)
   set(PROGRAM_PERMISSIONS
@@ -192,7 +192,7 @@ if (CPACK_GENERATOR STREQUAL "DEB")
   message(STATUS "Debian package name is ${CPACK_PACKAGE_FILE_NAME}.deb")
   
   if(PIDUINO_WITH_GPIO)
-    set(CPACK_DEBIAN_PACKAGE_DEPENDS "libmodbus5  (>= 3.1.4),libpiduino (>= ${PIDUINO_VERSION_MAJOR}.${PIDUINO_VERSION_MINOR}.${PIDUINO_VERSION_PATCH})")
+    set(CPACK_DEBIAN_PACKAGE_DEPENDS "libmodbus5  (>= 3.1.4),libpiduino (>= ${PIDUINO_VERSION})")
   else(PIDUINO_WITH_GPIO)
     set(CPACK_DEBIAN_PACKAGE_DEPENDS "libmodbus5  (>= 3.1.4)")
   endif(PIDUINO_WITH_GPIO)
