@@ -3,7 +3,7 @@
 > Copyright © 2015-2019 epsilonRT, All rights reserved.  
 
 
-## Presentation
+## Abstract
 
 mbpoll is a command line utility to communicate with ModBus slave (RTU or TCP).  
 It uses [libmodbus](http://libmodbus.org/).  
@@ -35,7 +35,8 @@ repository from [piduino.org](http://apt.piduino.org), so you should do the foll
 This repository provides `mbpoll` and `libmodbus` (version 3.1.4) packages for 
 `i386`, `amd64`, `armhf` and `arm64` architectures.
 In the above commands, the repository is a Debian Stretch distribution, but you 
-can also choose Ubuntu Xenial by replacing `stretch` with `xenial`.  
+can also choose Ubuntu Trusty, Xenial or Bionic by replacing `stretch` with 
+`trusty`, `xenial` or `bionic`.  
 It may be necessary to install the `software-properties-common` 
 package for `add-apt-repository`.
 
