@@ -80,7 +80,9 @@ typedef enum {
 
 typedef enum {
   eFormatDec,
+  eFormatInt16,
   eFormatHex,
+  eFormatString,
   eFormatInt,
   eFormatFloat,
   eFormatBin,
@@ -135,21 +137,29 @@ static const int iStopbitsList[] = {
 };
 #ifdef MBPOLL_FLOAT_DISABLE
 static const char * sFormatList[] = {
+  "int16",
   "hex",
+  "string",
   "int"
 };
 static const int iFormatList[] = {
+  eFormatInt16,
   eFormatHex,
+  eFormatString,
   eFormatInt
 };
 #else
 static const char * sFormatList[] = {
+  "int16",
   "hex",
+  "string",
   "int",
   "float"
 };
 static const int iFormatList[] = {
+  eFormatInt16,
   eFormatHex,
+  eFormatString,
   eFormatInt,
   eFormatFloat
 };
@@ -204,7 +214,8 @@ typedef struct xMbPollContext {
   eFormats eFormat;
   int * piSlaveAddr;
   int iSlaveCount;
-  int iStartRef;
+  int * piStartRef;
+  int iStartCount;
   int iCount;
   int iPollRate;
   double dTimeout;
@@ -248,7 +259,8 @@ static xMbPollContext ctx = {
   .eFormat = eFormatDec,
   .piSlaveAddr = NULL,
   .iSlaveCount = -1,
-  .iStartRef = DEFAULT_STARTREF,
+  .piStartRef = NULL,
+  .iStartCount = -1,
   .iCount = DEFAULT_NUMOFVALUES,
   .iPollRate = DEFAULT_POLLRATE,
   .dTimeout = DEFAULT_TIMEOUT,
@@ -436,7 +448,7 @@ main (int argc, char **argv) {
         break;
 
       case 'r':
-        ctx.iStartRef = iGetInt (sStartRefStr, optarg, 0);
+        ctx.piStartRef = iGetIntList (sStartRefStr, optarg, &ctx.iStartCount);
         break;
 
       case 'c':
@@ -569,15 +581,30 @@ main (int argc, char **argv) {
   }
   while (iNextOption != -1);
 
-  if (ctx.iPduOffset) {
+  if (ctx.iStartCount == -1) {
+    ctx.piStartRef = malloc (sizeof (int));
+    assert (ctx.piStartRef);
+    ctx.piStartRef[0] = DEFAULT_STARTREF;
+    ctx.iStartCount = 1;
+  }
 
-    vCheckIntRange (sStartRefStr, ctx.iStartRef,
-                    STARTREF_MIN, STARTREF_MAX);
+  int i;
+  if (ctx.iPduOffset) {
+    for (i = 0; i < ctx.iStartCount; i++) {
+      vCheckIntRange (sStartRefStr, ctx.piStartRef[i],
+                      STARTREF_MIN, STARTREF_MAX);
+    }
   }
   else {
+    for (i = 0; i < ctx.iStartCount; i++) {
+      vCheckIntRange (sStartRefStr, ctx.piStartRef[i],
+                      STARTREF_MIN - 1, STARTREF_MAX - 1);
+    }
+  }
 
-    vCheckIntRange (sStartRefStr, ctx.iStartRef,
-                    STARTREF_MIN - 1, STARTREF_MAX - 1);
+  // ignore iCount > 1 if start ref list contains more then one value
+  if ((ctx.iStartCount > 1) && (ctx.iCount > 1)) {
+    ctx.iCount = 1;
   }
 
   // Coils et Discrete inputs toujours en binaire
@@ -701,6 +728,15 @@ main (int argc, char **argv) {
               DFLOAT (ctx.pvData, i) = fSwapFloat ( (float) dValue);
               PDEBUG ("Float[%d]=%g\n", i, fSwapFloat (DFLOAT (ctx.pvData, i)));
             }
+            else if (ctx.eFormat == eFormatString) {
+                vSyntaxErrorExit ("You can use string format only for output");
+            }
+            else if (ctx.eFormat == eFormatInt16) {
+              iValue = iGetInt (sDataStr, argv[arg], 0);
+              vCheckIntRange (sDataStr, iValue, INT16_MIN, INT16_MAX);
+              DUINT16 (ctx.pvData, i) = (uint16_t) iValue;
+              PDEBUG ("Word[%d]=0x%X\n", i, DUINT16 (ctx.pvData, i));
+            }
             else {
               iValue = iGetInt (sDataStr, argv[arg], 0);
               vCheckIntRange (sDataStr, iValue, 0, UINT16_MAX);
@@ -720,6 +756,10 @@ main (int argc, char **argv) {
     vSyntaxErrorExit ("You can give a slave address list only for reading");
   }
 
+  if ( (ctx.iStartCount > 1) && (ctx.bIsWrite) ) {
+    vSyntaxErrorExit ("You can give a start ref list only for reading");
+  }
+
   if (ctx.iSlaveCount == -1) {
 
     ctx.piSlaveAddr = malloc (sizeof (int));
@@ -727,7 +767,6 @@ main (int argc, char **argv) {
     ctx.piSlaveAddr[0] = DEFAULT_SLAVEADDR;
     ctx.iSlaveCount = 1;
   }
-  int i;
 
   // Fin de vérification des valeurs de paramètres et création des contextes
   switch (ctx.eMode) {
@@ -824,13 +863,14 @@ main (int argc, char **argv) {
     // int32 et float utilisent 2 registres 16 bits
     iNbReg = ( (ctx.eFormat == eFormatInt) || (ctx.eFormat == eFormatFloat)) ?
              ctx.iCount * 2 : ctx.iCount;
-    // libmodbus utilise les adresses PDU !
-    iStartReg = ctx.iStartRef - ctx.iPduOffset;
 
     // Début de la boucle de scrutation
     do {
 
       if (ctx.bIsWrite) {
+
+        // libmodbus utilise les adresses PDU !
+        iStartReg = ctx.piStartRef[0] - ctx.iPduOffset;
 
         modbus_set_slave (ctx.xBus, ctx.piSlaveAddr[0]);
         ctx.iTxCount++;
@@ -900,41 +940,47 @@ main (int argc, char **argv) {
             putchar ('\n');
           }
 
-          switch (ctx.eFunction) {
-            case eFuncDiscreteInput:
-              iRet = modbus_read_input_bits (ctx.xBus, iStartReg, iNbReg,
-                                             ctx.pvData);
-              break;
+          int j;
+          for (j = 0; j < ctx.iStartCount; j++) {
+            // libmodbus utilise les adresses PDU !
+            iStartReg = ctx.piStartRef[j] - ctx.iPduOffset;
 
-            case eFuncCoil:
-              iRet = modbus_read_bits (ctx.xBus, iStartReg, iNbReg,
-                                       ctx.pvData);
-              break;
+            switch (ctx.eFunction) {
+              case eFuncDiscreteInput:
+                iRet = modbus_read_input_bits (ctx.xBus, iStartReg, iNbReg,
+                                               ctx.pvData);
+                break;
 
-            case eFuncInputReg:
-              iRet = modbus_read_input_registers (ctx.xBus, iStartReg, iNbReg,
-                                                  ctx.pvData);
-              break;
+              case eFuncCoil:
+                iRet = modbus_read_bits (ctx.xBus, iStartReg, iNbReg,
+                                         ctx.pvData);
+                break;
 
-            case eFuncHoldingReg:
-              iRet = modbus_read_registers (ctx.xBus, iStartReg, iNbReg,
-                                            ctx.pvData);
-              break;
+              case eFuncInputReg:
+                iRet = modbus_read_input_registers (ctx.xBus, iStartReg, iNbReg,
+                                                    ctx.pvData);
+                break;
 
-            default: // Impossible, la valeur a été vérifiée, évite un warning de gcc
-              break;
+              case eFuncHoldingReg:
+                iRet = modbus_read_registers (ctx.xBus, iStartReg, iNbReg,
+                                              ctx.pvData);
+                break;
 
-          }
-          if (iRet == iNbReg) {
+              default: // Impossible, la valeur a été vérifiée, évite un warning de gcc
+                break;
 
-            ctx.iRxCount++;
-            vPrintReadValues (ctx.iStartRef, ctx.iCount, &ctx);
-          }
-          else {
-            ctx.iErrorCount++;
-            fprintf (stderr, "Read %s failed: %s\n",
-                     sFunctionToStr (ctx.eFunction),
-                     modbus_strerror (errno));
+            }
+            if (iRet == iNbReg) {
+
+              ctx.iRxCount++;
+              vPrintReadValues (ctx.piStartRef[j], ctx.iCount, &ctx);
+            }
+            else {
+              ctx.iErrorCount++;
+              fprintf (stderr, "Read %s failed: %s\n",
+                       sFunctionToStr (ctx.eFunction),
+                       modbus_strerror (errno));
+            }
           }
           if (ctx.bIsPolling) {
 
@@ -984,8 +1030,18 @@ vPrintReadValues (int iAddr, int iCount, xMbPollContext * ctx) {
       }
       break;
 
+      case eFormatInt16:
+        printf ("%d", (int) (int16_t) (DUINT16 (ctx->pvData, i)));
+        iAddr++;
+        break;
+
       case eFormatHex:
         printf ("0x%04X", DUINT16 (ctx->pvData, i));
+        iAddr++;
+        break;
+
+      case eFormatString:
+        printf ("%c%c", (char) ((int) (DUINT16 (ctx->pvData, i) / 256)), (char) (DUINT16 (ctx->pvData, i) % 256));
         iAddr++;
         break;
 
@@ -1111,8 +1167,15 @@ vPrintConfig (const xMbPollContext * ctx) {
   printf ("Protocol configuration: Modbus %s\n", sModeList[ctx->eMode]);
   printf ("Slave configuration...: address = ");
   vPrintIntList (ctx->piSlaveAddr, ctx->iSlaveCount);
-  printf ("\n                        start reference = %d, count = %d\n",
-          ctx->iStartRef, ctx->iCount);
+  if (ctx->iStartCount > 1) {
+    printf ("\n                        start reference = ");
+    vPrintIntList (ctx->piStartRef, ctx->iStartCount);
+    printf ("\n");
+  }
+  else {
+    printf ("\n                        start reference = %d, count = %d\n",
+            ctx->piStartRef[0], ctx->iCount);
+  }
   vPrintCommunicationSetup (ctx);
   printf ("Data type.............: ");
   switch (ctx->eFunction) {
@@ -1328,19 +1391,24 @@ vUsage (FILE * stream, int exit_msg) {
            "                separated by commas or colons, for example :\n"
            "                -a 32,33,34,36:40 read [32,33,34,36,37,38,39,40]\n"
            "  -r #          Start reference (%d is default)\n"
+           "                for reading, it is possible to give a reference list\n"
+           "                separated by commas or colons\n"
            "  -c #          Number of values to read (%d-%d, %d is default)\n"
            "  -u            Read the description of the type, the current status, and other\n"
            "                information specific to a remote device (RTU only)\n"
            "  -t 0          Discrete output (coil) data type (binary 0 or 1)\n"
            "  -t 1          Discrete input data type (binary 0 or 1)\n"
            "  -t 3          16-bit input register data type\n"
+           "  -t 3:int16    16-bit input register data type with signed int display\n"
            "  -t 3:hex      16-bit input register data type with hex display\n"
            "  -t 3:int      32-bit integer data type in input register table\n"
 #ifndef MBPOLL_FLOAT_DISABLE
            "  -t 3:float    32-bit float data type in input register table\n"
 #endif
            "  -t 4          16-bit output (holding) register data type (default)\n"
+           "  -t 4:int16    16-bit output (holding) register data type with signed int display\n"
            "  -t 4:hex      16-bit output (holding) register data type with hex display\n"
+           "  -t 4:string   16-bit input register data type with string (char) display\n"
            "  -t 4:int      32-bit integer data type in output (holding) register table\n"
 #ifndef MBPOLL_FLOAT_DISABLE
            "  -t 4:float    32-bit float data type in output (holding) register table\n"
@@ -1350,6 +1418,7 @@ vUsage (FILE * stream, int exit_msg) {
            "  -1            Poll only once only, otherwise every poll rate interval\n"
            "  -l #          Poll rate in ms, ( > %d, %d is default)\n"
            "  -o #          Time-out in seconds (%.2f - %.2f, %.2f s is default)\n"
+           "  -q            Quiet mode.  Minimum output only\n"
            "Options for ModBus / TCP : \n"
            "  -p #          TCP port number (%s is default)\n"
            "Options for ModBus RTU : \n"

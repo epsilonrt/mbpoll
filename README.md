@@ -166,17 +166,22 @@ A complete help is available with the -h option:
                     separated by commas or colons, for example :
                     -a 32,33,34,36:40 read [32,33,34,36,37,38,39,40]
       -r #          Start reference (1 is default)
+                    for reading, it is possible to give an address list
+                    separated by commas or colons
       -c #          Number of values to read (1-125, 1 is default)
       -u            Read the description of the type, the current status, and other
                     information specific to a remote device (RTU only)
       -t 0          Discrete output (coil) data type (binary 0 or 1)
       -t 1          Discrete input data type (binary 0 or 1)
       -t 3          16-bit input register data type
+      -t 3:int16    16-bit input register data type with signed int display
       -t 3:hex      16-bit input register data type with hex display
       -t 3:int      32-bit integer data type in input register table
       -t 3:float    32-bit float data type in input register table
       -t 4          16-bit output (holding) register data type (default)
+      -t 4:int16    16-bit output (holding) register data type with signed int display
       -t 4:hex      16-bit output (holding) register data type with hex display
+      -t 4:string   16-bit input register data type with string (char) display
       -t 4:int      32-bit integer data type in output (holding) register table
       -t 4:float    32-bit float data type in output (holding) register table
       -0            First reference is 0 (PDU addressing) instead 1
@@ -184,6 +189,7 @@ A complete help is available with the -h option:
       -1            Poll only once only, otherwise every poll rate interval
       -l #          Poll rate in ms, ( > 100, 1000 is default)
       -o #          Time-out in seconds (0.01 - 10.00, 1.00 s is default)
+      -q            Quiet mode.  Minimum output only
     Options for ModBus / TCP : 
       -p #          TCP port number (502 is default)
     Options for ModBus RTU : 
