@@ -233,6 +233,7 @@ typedef struct xMbPollContext {
   bool bIsReportSlaveID;
   bool bIsDefaultMode;
   int iPduOffset;
+  bool bWriteSingleAsMany;
   bool bIsChipIo;
   bool bIsBigEndian;
   bool bIsQuiet;
@@ -280,6 +281,7 @@ static xMbPollContext ctx = {
   .bIsWrite = true,
   .bIsDefaultMode = true,
   .iPduOffset = 1,
+  .bWriteSingleAsMany = false,
   .bIsChipIo = false,
   .bIsBigEndian = false,
   .bIsQuiet = false,
@@ -311,14 +313,14 @@ static xChipIoSerial * xChipSerial;
 static const char sChipIoSlaveAddrStr[] = "chipio slave address";
 static const char sChipIoIrqPinStr[] = "chipio irq pin";
 // option -i et -n supplémentaires pour chipio
-static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u0RhVvwBqi:n:";
+static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u0WRhVvwBqi:n:";
 
 #else /* USE_CHIPIO == 0 */
 /* constants ================================================================ */
 #ifdef MBPOLL_GPIO_RTS
-static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u0R::F::hVvwBq";
+static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u0WR::F::hVvwBq";
 #else
-static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u0RFhVvwBq";
+static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u0WRFhVvwBq";
 #endif
 // -----------------------------------------------------------------------------
 #endif /* USE_CHIPIO == 0 */
@@ -501,6 +503,10 @@ main (int argc, char **argv) {
 
       case '0':
         ctx.iPduOffset = 0;
+        break;
+
+      case 'W':
+        ctx.bWriteSingleAsMany = true;
         break;
 
       case 'l':
@@ -893,7 +899,7 @@ main (int argc, char **argv) {
             break;
 
           case eFuncHoldingReg:
-            if (iNbReg == 1) {
+            if (iNbReg == 1 && (!ctx.bWriteSingleAsMany)) {
 
               // Ecriture d'un seul registre
               iRet = modbus_write_register (ctx.xBus, iStartReg,
@@ -1414,6 +1420,7 @@ vUsage (FILE * stream, int exit_msg) {
            "  -t 4:float    32-bit float data type in output (holding) register table\n"
 #endif
            "  -0            First reference is 0 (PDU addressing) instead 1\n"
+           "  -W            Using function 10 for write a single register\n"
            "  -B            Big endian word order for 32-bit integer and float\n"
            "  -1            Poll only once only, otherwise every poll rate interval\n"
            "  -l #          Poll rate in ms, ( > %d, %d is default)\n"
