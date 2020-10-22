@@ -176,12 +176,13 @@ A complete help is available with the -h option:
       -t 3          16-bit input register data type
       -t 3:int16    16-bit input register data type with signed int display
       -t 3:hex      16-bit input register data type with hex display
+      -t 3:string   16-bit input register data type with string (char) display
       -t 3:int      32-bit integer data type in input register table
       -t 3:float    32-bit float data type in input register table
       -t 4          16-bit output (holding) register data type (default)
       -t 4:int16    16-bit output (holding) register data type with signed int display
       -t 4:hex      16-bit output (holding) register data type with hex display
-      -t 4:string   16-bit input register data type with string (char) display
+      -t 4:string   16-bit output (holding) register data type with string (char) display
       -t 4:int      32-bit integer data type in output (holding) register table
       -t 4:float    32-bit float data type in output (holding) register table
       -0            First reference is 0 (PDU addressing) instead 1
