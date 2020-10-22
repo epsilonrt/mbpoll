@@ -55,7 +55,7 @@ For example, for a debian system:
 
 * Install [libmodbus](https://github.com/stephane/libmodbus.git) (Version >= 3.1.4) :
 
-        $ sudo apt-get install build-essential libtool git-core autoconf
+        $ sudo apt-get install build-essential libtool git-core autoconf automake
         $ git clone https://github.com/stephane/libmodbus.git
         $ cd libmodbus
         $ ./autogen.sh
