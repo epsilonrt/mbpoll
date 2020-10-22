@@ -1407,6 +1407,7 @@ vUsage (FILE * stream, int exit_msg) {
            "  -t 3          16-bit input register data type\n"
            "  -t 3:int16    16-bit input register data type with signed int display\n"
            "  -t 3:hex      16-bit input register data type with hex display\n"
+           "  -t 3:string   16-bit input register data type with string (char) display\n"
            "  -t 3:int      32-bit integer data type in input register table\n"
 #ifndef MBPOLL_FLOAT_DISABLE
            "  -t 3:float    32-bit float data type in input register table\n"
@@ -1414,7 +1415,7 @@ vUsage (FILE * stream, int exit_msg) {
            "  -t 4          16-bit output (holding) register data type (default)\n"
            "  -t 4:int16    16-bit output (holding) register data type with signed int display\n"
            "  -t 4:hex      16-bit output (holding) register data type with hex display\n"
-           "  -t 4:string   16-bit input register data type with string (char) display\n"
+           "  -t 4:string   16-bit output (holding) register data type with string (char) display\n"
            "  -t 4:int      32-bit integer data type in output (holding) register table\n"
 #ifndef MBPOLL_FLOAT_DISABLE
            "  -t 4:float    32-bit float data type in output (holding) register table\n"
