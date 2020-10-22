@@ -70,7 +70,7 @@ For example to query a debian system:
 
 * Install [piduino](https://github.com/epsilonrt/piduino/tree/dev) **only if you want to manage the RS485 with a GPIO signal**:
 
-        $ sudo apt-get install cmake libcppdb-dev pkg-config libsqlite3-dev sqlite3
+        $ sudo apt-get install cmake libcppdb-dev pkg-config libsqlite3-dev sqlite3 libudev-dev
         $ git clone https://github.com/epsilonrt/piduino.git
         $ cd piduino 
         $ git checkout dev
