@@ -216,6 +216,7 @@ typedef struct xMbPollContext {
   int iSlaveCount;
   int * piStartRef;
   int iStartCount;
+  bool bIsHexReference;
   int iCount;
   int iPollRate;
   double dTimeout;
@@ -262,6 +263,7 @@ static xMbPollContext ctx = {
   .iSlaveCount = -1,
   .piStartRef = NULL,
   .iStartCount = -1,
+  .bIsHexReference = false,
   .iCount = DEFAULT_NUMOFVALUES,
   .iPollRate = DEFAULT_POLLRATE,
   .dTimeout = DEFAULT_TIMEOUT,
@@ -313,14 +315,14 @@ static xChipIoSerial * xChipSerial;
 static const char sChipIoSlaveAddrStr[] = "chipio slave address";
 static const char sChipIoIrqPinStr[] = "chipio irq pin";
 // option -i et -n supplémentaires pour chipio
-static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u0WRhVvwBqi:n:";
+static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u0WRhVvwBqxi:n:";
 
 #else /* USE_CHIPIO == 0 */
 /* constants ================================================================ */
 #ifdef MBPOLL_GPIO_RTS
-static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u0WR::F::hVvwBq";
+static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u0WR::F::hVvwBqx";
 #else
-static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u0WRFhVvwBq";
+static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u0WRFhVvwBqx";
 #endif
 // -----------------------------------------------------------------------------
 #endif /* USE_CHIPIO == 0 */
@@ -451,6 +453,10 @@ main (int argc, char **argv) {
 
       case 'r':
         ctx.piStartRef = iGetIntList (sStartRefStr, optarg, &ctx.iStartCount);
+        break;
+
+      case 'x':
+        ctx.bIsHexReference = true;
         break;
 
       case 'c':
@@ -1012,7 +1018,12 @@ vPrintReadValues (int iAddr, int iCount, xMbPollContext * ctx) {
   int i;
   for (i = 0; i < iCount; i++) {
 
-    printf ("[%d]: \t", iAddr);
+    if (ctx->bIsHexReference) {
+      printf ("[0x%04X]: \t", iAddr);
+    }
+    else {
+      printf ("[%d]: \t", iAddr);
+    }
 
     switch (ctx->eFormat) {
 
@@ -1399,6 +1410,7 @@ vUsage (FILE * stream, int exit_msg) {
            "  -r #          Start reference (%d is default)\n"
            "                for reading, it is possible to give a reference list\n"
            "                separated by commas or colons\n"
+           "  -x            Use references with hex display\n"
            "  -c #          Number of values to read (%d-%d, %d is default)\n"
            "  -u            Read the description of the type, the current status, and other\n"
            "                information specific to a remote device (RTU only)\n"
