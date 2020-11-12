@@ -168,6 +168,7 @@ A complete help is available with the -h option:
       -r #          Start reference (1 is default)
                     for reading, it is possible to give an address list
                     separated by commas or colons
+      -x            Use references with hex display
       -c #          Number of values to read (1-125, 1 is default)
       -u            Read the description of the type, the current status, and other
                     information specific to a remote device (RTU only)
