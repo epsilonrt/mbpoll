@@ -826,7 +826,10 @@ main (int argc, char **argv) {
       modbus_free (ctx.xBus);
       vIoErrorExit ("Can't set RS485 mode (RTU): %s", modbus_strerror (errno));
     }
-    modbus_rtu_set_rts (ctx.xBus, ctx.iRtuMode);
+    if (modbus_rtu_set_rts (ctx.xBus, ctx.iRtuMode)) {
+      modbus_free (ctx.xBus);
+      vIoErrorExit ("Can't set RTS mode: %s", modbus_strerror (errno));
+    }
   }
 
   // Connection au bus
