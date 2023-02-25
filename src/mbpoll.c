@@ -807,11 +807,9 @@ main (int argc, char **argv) {
     vHello();
   }
 
-  if ( (ctx.iRtuMode != MODBUS_RTU_RTS_NONE) && (ctx.eMode == eModeRtu) &&
-       !ctx.bIsChipIo) {
-
+  if ( (ctx.eMode == eModeRtu) && !ctx.bIsChipIo ) {
 #ifdef MBPOLL_GPIO_RTS
-    if (ctx.iRtsPin >= 0) {
+    if ( ctx.iRtsPin >= 0 && MODBUS_RTU_RTS_NONE != ctx.iRtuMode ) {
       double t = 11 / (double) ctx.xRtu.baud / 2 * 1e6; // delay 1/2 car
 
       if (init_custom_rts (ctx.iRtsPin, ctx.iRtuMode == MODBUS_RTU_RTS_UP) != 0) {
@@ -822,7 +820,12 @@ main (int argc, char **argv) {
       modbus_rtu_set_rts_delay (ctx.xBus, (int) t);
     }
 #endif
-    modbus_rtu_set_serial_mode (ctx.xBus, MODBUS_RTU_RS485);
+    // If RTS mode is not set, then the MTU mode must be RS485, since the hardware
+    // is managing the transmit/receive mode. Otherwise it msu be a RS232 with explicit RTS handshake
+    if (modbus_rtu_set_serial_mode (ctx.xBus, MODBUS_RTU_RTS_NONE == ctx.iRtuMode ? MODBUS_RTU_RS485 : MODBUS_RTU_RS232)) {
+      modbus_free (ctx.xBus);
+      vIoErrorExit ("Can't set RS485 mode (RTU): %s", modbus_strerror (errno));
+    }
     modbus_rtu_set_rts (ctx.xBus, ctx.iRtuMode);
   }
 
