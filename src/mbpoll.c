@@ -69,6 +69,13 @@
 #define PDEBUG(...)  if (ctx.bIsVerbose) printf(__VA_ARGS__)
 #endif
 
+#ifndef MIN
+#define MIN(a,b) (((a)<(b))?(a):(b))
+#endif
+
+#ifndef MAX
+#define MAX(a,b) (((a)>(b))?(a):(b))
+#endif
 
 /* types ==================================================================== */
 typedef enum {
