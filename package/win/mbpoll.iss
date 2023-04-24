@@ -1,6 +1,6 @@
-; Copyright © 2015 epsilonRT, All rights reserved.
+; Copyright © 2015-2023 epsilonRT, All rights reserved.
 
-#define VERSION "0.1-19-ge00e908"
+#define VERSION "1.5"
 [Setup]
 ; NOTE: The value of AppId uniquely identifies this application.
 ; Do not use the same AppId value in installers for other applications.
@@ -10,10 +10,10 @@ AppName=MBPoll
 AppVerName=MBPoll {#VERSION}
 AppVersion={#VERSION}
 AppPublisher=Pascal Jean aka epsilonRT
-AppPublisherURL=http://www.btssn.net/mbpoll
-AppSupportURL=http://www.btssn.net/mbpoll
-AppUpdatesURL=http://www.btssn.net/mbpoll
-DefaultDirName={pf}\MBPoll
+AppPublisherURL=https://github.com/epsilonrt/mbpoll
+AppSupportURL=https://github.com/epsilonrt/mbpoll
+AppUpdatesURL=https://github.com/epsilonrt/mbpoll
+DefaultDirName={commonpf}\MBPoll
 SetupIconFile=mbpoll.ico
 DisableDirPage=yes
 AlwaysShowDirOnReadyPage=yes
@@ -32,7 +32,7 @@ Name: en; MessagesFile: compiler:Default.isl; LicenseFile: license.txt
 en.MainFiles=MBPoll
 en.MainDescription=A command line user interface allows easy communication with ModBus RTU and TCP slave
 en.Sources=Source Files
-en.Redist=Microsoft Visual C++ 2013 Redistribuable (x86)
+en.Redist=Microsoft Visual C++ Redistribuable (x86)
 
 [Components]
 Name: main; Description: {cm:MainFiles}; Types: full compact custom; Flags: fixed
@@ -43,10 +43,10 @@ Name: source; Description: {cm:Sources}; Types: custom
 Name: modifypath; Description: Add application directory to your environmental path; Flags: checkedonce
 
 [Files]
-Source: app\*; DestDir: {app}; Flags: ignoreversion recursesubdirs createallsubdirs; Components: main
+Source: ..\..\build\Release\*; DestDir: {app}; Flags: ignoreversion recursesubdirs createallsubdirs; Components: main
 Source: license*.txt; DestDir: {app}; Flags: ignoreversion recursesubdirs createallsubdirs; Components: main
 Source: mbpoll.ico; DestDir: {app}; Flags: ignoreversion recursesubdirs createallsubdirs; Components: main
-Source: src\*; DestDir: {app}\src; Flags: ignoreversion recursesubdirs createallsubdirs; Components: source
+Source: ..\..\*; Excludes: \build,\package,\libmodbus,.*;DestDir: {app}\src; Flags: ignoreversion recursesubdirs createallsubdirs; Components: source
 Source: tmp\vcredist_x86.exe; DestDir: {tmp}; Flags: deleteafterinstall
 
 [Run]
