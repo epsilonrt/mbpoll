@@ -101,6 +101,8 @@ If you prefer, you can in the place of direct compilation create a package and i
 
 That's all !
 
+For Windows, you can follow the instructions in the [README-WINDOWS.md](README-WINDOWS.md) file.
+
 ## Examples
 
 The following command is used to read the input registers 1 and 2 of the

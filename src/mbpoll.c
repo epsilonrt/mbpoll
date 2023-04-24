@@ -1,4 +1,4 @@
-/* Copyright © 2015-2019 Pascal JEAN, All rights reserved.
+/* Copyright (c) 2015-2023 Pascal JEAN, All rights reserved.
  *
  * mbpoll is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,8 +30,13 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <time.h>
+#if defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
 #include <unistd.h>
 #include <sys/time.h>
+#endif
+#ifdef _WIN32
+#include <windows.h>
+#endif
 #include "serial.h"
 #include "custom-rts.h"
 #include "version-git.h"
@@ -47,17 +52,10 @@
 # define MBPOLL_FLOAT_DISABLE
 #endif
 
-#ifndef MIN
-#define MIN(a,b) (((a)<(b))?(a):(b))
-#endif
-#ifndef MAX
-#define MAX(a,b) (((a)>(b))?(a):(b))
-#endif
-
 /* macros =================================================================== */
 #define BASENAME(f) (f)
 
-#if !defined(_WIN32) && (defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__)))
+#if defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
 # include <libgen.h>
 # undef BASENAME
 # define BASENAME(f) basename(f)
@@ -69,6 +67,12 @@
 #define PDEBUG(...)  if (ctx.bIsVerbose) printf(__VA_ARGS__)
 #endif
 
+#ifndef MIN
+#define MIN(a,b) (((a)<(b))?(a):(b))
+#endif
+#ifndef MAX
+#define MAX(a,b) (((a)>(b))?(a):(b))
+#endif
 
 /* types ==================================================================== */
 typedef enum {
@@ -363,9 +367,28 @@ float fSwapFloat (float f);
 int32_t lSwapLong (int32_t l);
 void mb_delay (unsigned long d);
 
-#if defined(_MSC_VER)
-// Portage des fonctions POSIX ou GNU
+#if defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
+// Portage des fonctions Microsoft
 // -----------------------------------------------------------------------------
+static char *
+_strlwr (char * str) {
+  char * p = str;
+
+  while (*p) {
+    *p = tolower (*p);
+    p++;
+  }
+  return str;
+}
+#else
+// Portage des fonctions POSIX ou GNU
+
+// -----------------------------------------------------------------------------
+// posix
+#define strcasecmp _stricmp
+
+// -----------------------------------------------------------------------------
+// posix
 static char *
 basename (char * path) {
   static char fname[_MAX_FNAME];
@@ -373,12 +396,14 @@ basename (char * path) {
 
   return fname;
 }
+
 // -----------------------------------------------------------------------------
+// posix
 static char *
 strcasestr (const char *haystack, const char *needle) {
-  int nlen = strlen (needle);
-  int hlen = strlen (haystack) - nlen + 1;
-  int i;
+  size_t nlen = strlen (needle);
+  size_t hlen = strlen (haystack) - nlen + 1;
+  size_t i;
 
   for (i = 0; i < hlen; i++) {
     int j;
@@ -397,6 +422,7 @@ next:
 }
 
 // -----------------------------------------------------------------------------
+// posix
 static char *
 index (const char *s, int c) {
 
@@ -408,22 +434,8 @@ index (const char *s, int c) {
   }
   return NULL;
 }
-#else /* _MSC_VER not defined */
-// Portage des fonctions Microsoft
 
-// -----------------------------------------------------------------------------
-static char *
-strlwr (char * str) {
-  char * p = str;
-
-  while (*p) {
-    *p = tolower (*p);
-    p++;
-  }
-  return str;
-}
-
-#endif /* _MSC_VER not defined */
+#endif
 
 /* main ===================================================================== */
 
@@ -1333,7 +1345,7 @@ vVersion (void)  {
 void
 vWarranty (void) {
   printf (
-    "Copyright © 2015-2019 %s, All rights reserved.\n\n"
+    "Copyright (c) 2015-2023 %s, All rights reserved.\n\n"
 
     " mbpoll is free software: you can redistribute it and/or modify\n"
     " it under the terms of the GNU General Public License as published by\n"
@@ -1356,7 +1368,7 @@ void
 vHello (void) {
   printf ("mbpoll %s - FieldTalk(tm) Modbus(R) Master Simulator\n",
           VERSION_SHORT);
-  printf ("Copyright © 2015-2019 %s, %s\n", AUTHORS, WEBSITE);
+  printf ("Copyright (c) 2015-2023 %s, %s\n", AUTHORS, WEBSITE);
   printf ("This program comes with ABSOLUTELY NO WARRANTY.\n");
   printf ("This is free software, and you are welcome to redistribute it\n");
   printf ("under certain conditions; type 'mbpoll -w' for details.\n\n");
@@ -1539,7 +1551,7 @@ iGetEnum (const char * sName, char * sElmt, const char ** psStrList,
 
     if (strcasecmp (sElmt, psStrList[i]) == 0) {
 
-      PDEBUG ("Set %s=%s\n", sName, strlwr (sElmt));
+      PDEBUG ("Set %s=%s\n", sName, _strlwr (sElmt));
       return iList[i];
     }
   }
@@ -1777,7 +1789,7 @@ void
 mb_delay (unsigned long d) {
 
   if (d) {
-
+#if defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
     if (d == -1) {
 
       sleep (-1);
@@ -1789,6 +1801,9 @@ mb_delay (unsigned long d) {
       dt.tv_sec  = d / 1000UL;
       nanosleep (&dt, NULL);
     }
+#else
+    Sleep (d);
+#endif
   }
 }
 /* ========================================================================== */

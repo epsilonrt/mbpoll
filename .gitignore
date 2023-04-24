@@ -10,3 +10,5 @@ compile_commands.json
 obj/
 .*
 version.*
+build*/
+libmodbus/
