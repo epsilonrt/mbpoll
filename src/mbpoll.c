@@ -205,7 +205,9 @@ typedef struct xMbPollContext {
     bool bIsChipIo;
     bool bIsBigEndian;
     ePrintLevel ePrint;
-    bool bIsQuiet;
+    bool bIsStream;
+    FILE* xOutputStream;
+    FILE* xTempStream;
 #ifdef MBPOLL_GPIO_RTS
     int iRtsPin;
 #endif
@@ -253,7 +255,9 @@ static xMbPollContext ctx = {
     .bIsChipIo          = false,
     .bIsBigEndian       = false,
     .ePrint             = ePrintNormal,
-    .bIsQuiet           = false,
+    .bIsStream          = false,
+    .xOutputStream      = NULL,
+    .xTempStream        = NULL,
 #ifdef MBPOLL_GPIO_RTS
     .iRtsPin = -1,
 #endif
@@ -282,14 +286,14 @@ static xChipIoSerial* xChipSerial;
 static char const sChipIoSlaveAddrStr[] = "chipio slave address";
 static char const sChipIoIrqPinStr[]    = "chipio irq pin";
 // option -i et -n supplémentaires pour chipio
-static char const* short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u0WRhVvwBqi:n:";
+static char const* short_options = "O:m:a:r:c:t:1l:o:p:b:d:s:P:u0WRhVvwBqiS:n:";
 
 #else /* USE_CHIPIO == 0 */
 /* constants ================================================================ */
 #ifdef MBPOLL_GPIO_RTS
-static char const* short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u0WR::F::hVvwBq";
+static char const* short_options = "O:m:a:r:c:t:1l:o:p:b:d:s:P:u0WRS::F::hVvwBq";
 #else
-static char const* short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u0WRFhVvwBq";
+static char const* short_options = "O:m:a:r:c:t:1l:o:p:b:d:s:P:u0WRFhVvwBqS";
 #endif
 // -----------------------------------------------------------------------------
 #endif /* USE_CHIPIO == 0 */
@@ -297,7 +301,10 @@ static char const* short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u0WRFhVvwBq";
 /* private functions ======================================================== */
 void vAllocate(xMbPollContext* ctx);
 int logString(char const* const format, ...);
+int logError(char const* const format, ...);
 int logChar(int const character);
+void copyFromTempStream();
+void streamData(char const* const, size_t size);
 void vPrintReadValues(int iAddr, int iCount, xMbPollContext* ctx);
 void vPrintConfig(xMbPollContext const* ctx);
 void vPrintCommunicationSetup(xMbPollContext const* ctx);
@@ -392,6 +399,8 @@ static char* index(char const* s, int c) {
 /* main ===================================================================== */
 
 int main(int argc, char** argv) {
+    ctx.xTempStream   = tmpfile();
+    ctx.xOutputStream = ctx.xTempStream;
     int iNextOption, iRet = 0;
     char* p;
 
@@ -445,6 +454,15 @@ int main(int argc, char** argv) {
 
             case 'B': ctx.bIsBigEndian = true; break;
 
+            case 'S': ctx.bIsStream = true; break;
+
+            case 'O':
+                ctx.xOutputStream = fopen(optarg, "w");
+                if (ctx.xOutputStream == NULL) {
+                    vSyntaxErrorExit("Could not open file '%s' in write mode.", optarg);
+                }
+                break;
+
             case 'R': ctx.iRtuMode = MODBUS_RTU_RTS_DOWN;
 #ifdef MBPOLL_GPIO_RTS
                 if (optarg) {
@@ -470,9 +488,8 @@ int main(int argc, char** argv) {
                 if (ctx.iPollRate < 0) {
                     vSyntaxErrorExit("Illegal %s: %d", sPollRateStr, ctx.iPollRate);
                 } else if (ctx.iPollRate < POLLRATE_MIN) {
-                    fprintf(
-                        stderr,
-                        "Warning: Small %s: %d ms, cannot guarantee it will be stable.",
+                    logError(
+                        "Warning: Small %s: %d ms, cannot guarantee it will be stable.\n",
                         sPollRateStr,
                         ctx.iPollRate);
                 }
@@ -557,6 +574,8 @@ int main(int argc, char** argv) {
         }
     } while (iNextOption != -1);
 
+    copyFromTempStream();
+
     if (ctx.iStartCount == -1) {
         ctx.piStartRef = malloc(sizeof(int));
         assert(ctx.piStartRef);
@@ -635,17 +654,27 @@ int main(int argc, char** argv) {
 
     if (!ctx.bIsReportSlaveID) {
         // Calcul du nombre de données à écrire
-        int iNbToWrite = MAX(0, argc - optind - 1);
-        if (iNbToWrite) {
-            if (!ctx.bIsWrite) {
-                // option -c fournie pour une lecture avec des données à écrire !
-                vSyntaxErrorExit("-c parameter must not be specified for writing");
+        int iNbToWrite = 0;
+        if (ctx.bIsStream) {
+            if (ctx.bIsWrite) {
+                iNbToWrite = ctx.iStartCount;
+                ctx.iCount = ctx.iStartCount;
+            } else {
+                setbuf(stdout, NULL);
             }
-            ctx.bIsPolling = false;
-            ctx.iCount     = iNbToWrite;
-            PDEBUG("%d write data have been found\n", iNbToWrite);
         } else {
-            ctx.bIsWrite = false;
+            iNbToWrite = MAX(0, argc - optind - 1);
+            if (iNbToWrite) {
+                if (!ctx.bIsWrite) {
+                    // option -c fournie pour une lecture avec des données à écrire !
+                    vSyntaxErrorExit("-c parameter must not be specified for writing");
+                }
+                ctx.bIsPolling = false;
+                ctx.iCount     = iNbToWrite;
+                PDEBUG("%d write data have been found\n", iNbToWrite);
+            } else {
+                ctx.bIsWrite = false;
+            }
         }
 
         // Allocation de la mémoire nécessaire
@@ -704,12 +733,12 @@ int main(int argc, char** argv) {
         }
     }
 
-    if ((ctx.iSlaveCount > 1) && ((ctx.bIsWrite) || (ctx.bIsReportSlaveID))) {
-        vSyntaxErrorExit("You can give a slave address list only for reading");
+    if ((ctx.iSlaveCount > 1) && ((ctx.bIsStream) || (ctx.bIsWrite) || (ctx.bIsReportSlaveID))) {
+        vSyntaxErrorExit("You can give a slave address list only for reading without streaming");
     }
 
-    if ((ctx.iStartCount > 1) && (ctx.bIsWrite)) {
-        vSyntaxErrorExit("You can give a start ref list only for reading");
+    if ((ctx.iStartCount > 1) && (ctx.bIsWrite) && (!ctx.bIsStream)) {
+        vSyntaxErrorExit("You can give a start ref list only for reading or streaming");
     }
 
     if (ctx.iSlaveCount == -1) {
@@ -812,7 +841,17 @@ int main(int argc, char** argv) {
 
                 modbus_set_slave(ctx.xBus, ctx.piSlaveAddr[0]);
                 ctx.iTxCount++;
-
+                if (ctx.bIsStream) {
+                    int readVals = fread(ctx.pvData, 1, iNbReg, stdin);
+                    if (readVals != iNbReg) {
+                        ctx.iErrorCount++;
+                        logError(
+                            "Write %s failed: %s\n",
+                            sFunctionToStr(ctx.eFunction),
+                            "Couldn't read from input stream.");
+                        break;
+                    }
+                }
                 // Ecriture ------------------------------------------------------------
                 switch (ctx.eFunction) {
                     case eFuncCoil:
@@ -842,8 +881,7 @@ int main(int argc, char** argv) {
                     logString("Written %d references.\n", ctx.iCount);
                 } else {
                     ctx.iErrorCount++;
-                    fprintf(
-                        stderr,
+                    logError(
                         "Write %s failed: %s\n",
                         sFunctionToStr(ctx.eFunction),
                         modbus_strerror(errno));
@@ -895,11 +933,13 @@ int main(int argc, char** argv) {
                         }
                         if (iRet == iNbReg) {
                             ctx.iRxCount++;
+                            if (ctx.bIsStream) {
+                                streamData(ctx.pvData, ctx.iCount);
+                            }
                             vPrintReadValues(ctx.piStartRef[j], ctx.iCount, &ctx);
                         } else {
                             ctx.iErrorCount++;
-                            fprintf(
-                                stderr,
+                            logError(
                                 "Read %s failed: %s\n",
                                 sFunctionToStr(ctx.eFunction),
                                 modbus_strerror(errno));
@@ -922,20 +962,68 @@ int main(int argc, char** argv) {
 
 // -----------------------------------------------------------------------------
 int logString(char const* const format, ...) {
-    if (ctx.ePrint == ePrintNothing || (!ctx.bIsWrite)) {
+    bool isReadStream = (!ctx.bIsWrite) && (ctx.bIsStream);
+    if (ctx.ePrint == ePrintNothing || (ctx.xOutputStream == stdout && isReadStream)) {
         return 0;
     }
-    va_list va;
+    va_list args;
+    va_start(args, format);
+    int result = vfprintf(ctx.xOutputStream, format, args);
+    va_end(args);
+    return result;
+}
 
-    va_start(va, format);
-    return vprintf(format, va);
+int logError(char const* const format, ...) {
+    va_list args;
+    va_start(args, format);
+
+    va_list args_copy;
+    va_copy(args_copy, args);
+    fflush(ctx.xOutputStream);
+    vfprintf(ctx.xOutputStream, format, args);
+    va_end(args);
+    fflush(ctx.xOutputStream);
+
+    int result = vfprintf(stderr, format, args_copy);
+    va_end(args_copy);
+    return result;
 }
 
 int logChar(int const character) {
-    if (ctx.ePrint == ePrintNothing || (!ctx.bIsWrite)) {
+    bool isReadStream = (!ctx.bIsWrite) && (ctx.bIsStream);
+    if (ctx.ePrint == ePrintNothing || (ctx.xOutputStream == stdout && isReadStream)) {
         return 0;
     }
-    return putchar(character);
+    return putc(character, ctx.xOutputStream);
+}
+
+void copyFromTempStream() {
+    if (ctx.xTempStream == NULL) {
+        return;
+    }
+    if (ctx.xOutputStream == ctx.xTempStream) {
+        ctx.xOutputStream = stdout;
+    }
+    // Write anything that was written to the
+    char buf[sizeof(long)];
+    rewind(ctx.xTempStream);
+    int readLength = 0;
+    while ((readLength = fread(buf, sizeof(char), sizeof(long), ctx.xTempStream)) > 0) {
+        if (readLength != 8) {
+            buf[readLength] = 0;
+        }
+        fprintf(ctx.xOutputStream, "%s", buf);
+    }
+    fclose(ctx.xTempStream);
+    ctx.xTempStream = NULL;
+}
+
+void streamData(char const* const data, size_t size) {
+    if (ctx.bIsStream) {
+        for (size_t i = 0; i < size; i++) {
+            putchar(data[i]);
+        }
+    }
 }
 
 void vPrintReadValues(int iAddr, int iCount, xMbPollContext* ctx) {
@@ -1009,7 +1097,7 @@ void vReportSlaveID(xMbPollContext const* ctx) {
     int iRet = modbus_report_slave_id(ctx->xBus, 256, ucReport);
 
     if (iRet < 0) {
-        fprintf(stderr, "Report slave ID failed(%d): %s\n", iRet, modbus_strerror(errno));
+        logError("Report slave ID failed(%d): %s\n", iRet, modbus_strerror(errno));
     } else {
         if (iRet > 1) {
             int iLen = iRet - 2;
@@ -1035,7 +1123,7 @@ void vReportSlaveID(xMbPollContext const* ctx) {
                 logChar('\n');
             }
         } else {
-            fprintf(stderr, "no data available\n");
+            logError("no data available\n");
         }
     }
 }
@@ -1170,6 +1258,10 @@ void vSigIntHandler(int sig) {
 
     free(ctx.pvData);
     free(ctx.piSlaveAddr);
+    fflush(ctx.xOutputStream);
+    if (ctx.xOutputStream != stdout) {
+        fclose(ctx.xOutputStream);
+    }
     modbus_close(ctx.xBus);
     modbus_free(ctx.xBus);
 #ifdef USE_CHIPIO
@@ -1189,20 +1281,25 @@ void vSigIntHandler(int sig) {
 
 // -----------------------------------------------------------------------------
 void vFailureExit(bool bHelp, char const* format, ...) {
+    copyFromTempStream();
     va_list va;
 
     va_start(va, format);
-    fprintf(stderr, "%s: ", progname);
-    vfprintf(stderr, format, va);
+    logError("%s: ", progname);
+    logError(format, va);
     if (bHelp) {
-        fprintf(stderr, " ! Try -h for help.\n");
+        logError(" ! Try -h for help.\n");
     } else {
-        fprintf(stderr, ".\n");
+        logError(".\n");
     }
     va_end(va);
     fflush(stderr);
     free(ctx.pvData);
     free(ctx.piSlaveAddr);
+    fflush(ctx.xOutputStream);
+    if (ctx.xOutputStream != stdout) {
+        fclose(ctx.xOutputStream);
+    }
     exit(EXIT_FAILURE);
 }
 
@@ -1310,6 +1407,11 @@ void vUsage(FILE* stream, int exit_msg) {
         "  -0            First reference is 0 (PDU addressing) instead 1\n"
         "  -W            Using function 10 for write a single register\n"
         "  -B            Big endian word order for 32-bit integer and float\n"
+        "  -S            Stream input or output, in conjunction with -c it will read and create a\n"
+        "                stream output (Use -O to write regular output somewhere else) with the\n"
+        "                data from the device, otherwise it will read stdin as a stream input to\n"
+        "                write to the device\n"
+        "  -O #          Writes standard output to a file\n"
         "  -1            Poll only once only, otherwise every poll rate interval\n"
         "  -l #          Poll rate in ms, ( > %d could be unstable, %d is default)\n"
         "  -o #          Time-out in seconds (%.2f - %.2f, %.2f s is default)\n"
