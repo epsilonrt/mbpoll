@@ -9,6 +9,7 @@ compile_commands.json
 *.so
 obj/
 .*
+*.t.err
 version.*
 build*/
 libmodbus/
