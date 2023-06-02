@@ -303,6 +303,7 @@ void vAllocate(xMbPollContext* ctx);
 int logString(char const* const format, ...);
 int logError(char const* const format, ...);
 int logChar(int const character);
+void closeOutput();
 void copyFromTempStream();
 void streamData(char const* const, size_t size);
 void vPrintReadValues(int iAddr, int iCount, xMbPollContext* ctx);
@@ -962,8 +963,7 @@ int main(int argc, char** argv) {
 
 // -----------------------------------------------------------------------------
 int logString(char const* const format, ...) {
-    bool isReadStream = (!ctx.bIsWrite) && (ctx.bIsStream);
-    if (ctx.ePrint == ePrintNothing || (ctx.xOutputStream == stdout && isReadStream)) {
+    if ((ctx.ePrint == ePrintNothing) || (ctx.xOutputStream == NULL)) {
         return 0;
     }
     va_list args;
@@ -975,26 +975,38 @@ int logString(char const* const format, ...) {
 
 int logError(char const* const format, ...) {
     va_list args;
+    va_list* args_pointer = &args;
     va_start(args, format);
 
-    va_list args_copy;
-    va_copy(args_copy, args);
-    fflush(ctx.xOutputStream);
-    vfprintf(ctx.xOutputStream, format, args);
-    va_end(args);
-    fflush(ctx.xOutputStream);
+    if (ctx.xOutputStream != NULL && ctx.xOutputStream != stdout) {
+        va_list args_copy;
+        va_copy(args_copy, args);
+        fflush(ctx.xOutputStream);
+        vfprintf(ctx.xOutputStream, format, args);
+        va_end(args);
+        fflush(ctx.xOutputStream);
+        args_pointer = &args_copy;
+    }
 
-    int result = vfprintf(stderr, format, args_copy);
-    va_end(args_copy);
+    int result = vfprintf(stderr, format, *args_pointer);
+    va_end(*args_pointer);
     return result;
 }
 
 int logChar(int const character) {
-    bool isReadStream = (!ctx.bIsWrite) && (ctx.bIsStream);
-    if (ctx.ePrint == ePrintNothing || (ctx.xOutputStream == stdout && isReadStream)) {
+    if ((ctx.ePrint == ePrintNothing) || (ctx.xOutputStream == NULL)) {
         return 0;
     }
     return putc(character, ctx.xOutputStream);
+}
+
+void closeOutput() {
+    if (ctx.xOutputStream != NULL) {
+        fflush(ctx.xOutputStream);
+        if (ctx.xOutputStream != stdout) {
+            fclose(ctx.xOutputStream);
+        }
+    }
 }
 
 void copyFromTempStream() {
@@ -1002,7 +1014,14 @@ void copyFromTempStream() {
         return;
     }
     if (ctx.xOutputStream == ctx.xTempStream) {
-        ctx.xOutputStream = stdout;
+        if (!ctx.bIsStream || ctx.bIsWrite) {
+            ctx.xOutputStream = stdout;
+        } else {
+            ctx.xOutputStream = NULL;
+            fclose(ctx.xTempStream);
+            ctx.xTempStream = NULL;
+            return;
+        }
     }
     // Write anything that was written to the
     char buf[sizeof(long)];
@@ -1020,9 +1039,8 @@ void copyFromTempStream() {
 
 void streamData(char const* const data, size_t size) {
     if (ctx.bIsStream) {
-        for (size_t i = 0; i < size; i++) {
-            putchar(data[i]);
-        }
+        fwrite(data, 1, size, stdout);
+        fflush(stdout);
     }
 }
 
@@ -1258,10 +1276,7 @@ void vSigIntHandler(int sig) {
 
     free(ctx.pvData);
     free(ctx.piSlaveAddr);
-    fflush(ctx.xOutputStream);
-    if (ctx.xOutputStream != stdout) {
-        fclose(ctx.xOutputStream);
-    }
+    closeOutput();
     modbus_close(ctx.xBus);
     modbus_free(ctx.xBus);
 #ifdef USE_CHIPIO
@@ -1296,10 +1311,7 @@ void vFailureExit(bool bHelp, char const* format, ...) {
     fflush(stderr);
     free(ctx.pvData);
     free(ctx.piSlaveAddr);
-    fflush(ctx.xOutputStream);
-    if (ctx.xOutputStream != stdout) {
-        fclose(ctx.xOutputStream);
-    }
+    closeOutput();
     exit(EXIT_FAILURE);
 }
 
