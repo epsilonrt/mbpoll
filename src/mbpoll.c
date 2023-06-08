@@ -406,7 +406,7 @@ strcasestr (const char *haystack, const char *needle) {
   size_t i;
 
   for (i = 0; i < hlen; i++) {
-    int j;
+    size_t j;
     for (j = 0; j < nlen; j++) {
       unsigned char c1 = haystack[i + j];
       unsigned char c2 = needle[j];
@@ -1094,7 +1094,7 @@ vReportSlaveID (const xMbPollContext * ctx) {
 
   modbus_set_slave (ctx->xBus, ctx->piSlaveAddr[0]);
   // Affichage de la configuration
-  printf ("Protocol configuration: Modbus %s\n", sModeList[ctx->eMode]);
+  printf ("Protocol configuration: ModBus %s\n", sModeList[ctx->eMode]);
   printf ("Slave configuration...: address = %d, report slave id\n",
           ctx->piSlaveAddr[0]);
 
@@ -1189,7 +1189,7 @@ void
 vPrintConfig (const xMbPollContext * ctx) {
 
   // Affichage de la configuration
-  printf ("Protocol configuration: Modbus %s\n", sModeList[ctx->eMode]);
+  printf ("Protocol configuration: ModBus %s\n", sModeList[ctx->eMode]);
   printf ("Slave configuration...: address = ");
   vPrintIntList (ctx->piSlaveAddr, ctx->iSlaveCount);
   if (ctx->iStartCount > 1) {
@@ -1366,7 +1366,7 @@ vWarranty (void) {
 // -----------------------------------------------------------------------------
 void
 vHello (void) {
-  printf ("mbpoll %s - FieldTalk(tm) Modbus(R) Master Simulator\n",
+  printf ("mbpoll %s - ModBus(R) Master Simulator\n",
           VERSION_SHORT);
   printf ("Copyright (c) 2015-2023 %s, %s\n", AUTHORS, WEBSITE);
   printf ("This program comes with ABSOLUTELY NO WARRANTY.\n");
@@ -1383,8 +1383,10 @@ vUsage (FILE * stream, int exit_msg) {
            , sMyName);
 
   fprintf (stream,
-           "ModBus Master Simulator. It allows to read and write in ModBus slave registers\n"
-           "                         connected by serial (RTU only) or TCP.\n\n"
+          //-----------------------------------------------------------------------------
+           "ModBus(R) Master Simulator Master Simulator.\n"
+           " Allows to read and write in ModBus slave registers connected by\n"
+           " serial (RTU only) or TCP.\n\n"
 
            "Arguments :\n"
            "  device        Serial port when using ModBus RTU protocol\n"

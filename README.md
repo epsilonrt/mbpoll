@@ -1,16 +1,15 @@
 # mbpoll
 
-> Copyright © 2015-2019 epsilonRT, All rights reserved.  
+Copyright © 2015-2023 Pascal JEAN, All rights reserved.
 
 
 ## Abstract
 
 mbpoll is a command line utility to communicate with ModBus slave (RTU or TCP).  
-It uses [libmodbus](http://libmodbus.org/).  
 This is a multiplatform project, the compilation was tested on GNU Linux
-x86 and x86_64, Microsoft Windows 7 x86 and GNU Linux ARM 6 (Raspbian).  
-Although the syntax of these options is very close modpoll proconX program,
-it is a completely independent project.
+x86, x86_64, armhf and arm64 (Armbian/Raspbian), Microsoft Windows, and Mac OSX.  
+
+Development of major version 1 of mbpoll is complete, **version 2 using libmodbuspp is under development.** Proposals for new features will be transferred to this new branch.
 
 mbpoll can:
 
@@ -21,6 +20,9 @@ mbpoll can:
 
 The reading and writing registers may be in decimal, hexadecimal or 
 floating single precision.
+
+> **Note:** mbpoll's output syntax and command line option syntax is similar to the original modpoll command line program published by proconX. However mbpoll is a completely independent project and based on different source code than the original modpoll program. mbpoll is distributed under the GPL license, but the original modpoll program is not covered by the GPL license.
+
 
 ## Quickstart guide
 
@@ -112,9 +114,11 @@ slave at address 33 connected through RTU /dev/ttyUSB2 (38400 Bd)
 
         $ mbpoll -a 33 -b 38400 -t 3 -r 1 -c 2 /dev/ttyUSB2
         
-        mbpoll 0.1-10 - FieldTalk(tm) Modbus(R) Master Simulator
-        Copyright (c) 2015 epsilonRT, All rights reserved.
-        This software is governed by the CeCILL license <http://www.cecill.info>
+        mbpoll 1.5 -  Modbus® Master Simulator
+        Copyright (c) 2015-2023 Pascal JEAN, https://github.com/epsilonrt/mbpoll
+        This program comes with ABSOLUTELY NO WARRANTY.
+        This is free software, and you are welcome to redistribute it
+        under certain conditions; type 'mbpoll -w' for details.
 
         Protocol configuration: Modbus RTU
         Slave configuration...: address = [33]
@@ -211,7 +215,7 @@ A complete help is available with the -h option:
                     its progress.  This is helpful in debugging connection...
 
 ---
-> Copyright © 2015-2019 Pascal JEAN, All rights reserved.
+> Copyright © 2015-2023 Pascal JEAN, All rights reserved.
 
 > mbpoll is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
