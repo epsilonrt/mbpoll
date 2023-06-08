@@ -1,6 +1,6 @@
 ; Copyright © 2015-2023 epsilonRT, All rights reserved.
 
-#define VERSION "1.5"
+#define VERSION "1.5.1"
 [Setup]
 ; NOTE: The value of AppId uniquely identifies this application.
 ; Do not use the same AppId value in installers for other applications.
