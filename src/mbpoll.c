@@ -1384,7 +1384,7 @@ vUsage (FILE * stream, int exit_msg) {
 
   fprintf (stream,
           //-----------------------------------------------------------------------------
-           "ModBus(R) Master Simulator Master Simulator.\n"
+           "ModBus(R) Master Simulator.\n"
            " Allows to read and write in ModBus slave registers connected by\n"
            " serial (RTU only) or TCP.\n\n"
 
