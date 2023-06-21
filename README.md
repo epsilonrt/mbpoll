@@ -90,6 +90,8 @@ For example to query a debian system:
         $ cd build
         $ cmake ..
 
+In some cases, when installing pkg-config for the first time, it may be necessary to set the `$PKG_CONFIG_PATH` environment variable before running CMAKE, so `pkg_check_module` it will be able to find the libmodbus at `/usr/local/lib/` directory. This can be done by the following command: `export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH`. Make sure to adjust the path `/usr/local/lib/pkgconfig` if your pkgconfig is located in a different path.
+
 * Compile and install mbpoll:
 
         $ make
