@@ -251,6 +251,7 @@ typedef struct xMbPollContext {
 #ifdef MBPOLL_GPIO_RTS
   int iRtsPin;
 #endif
+  FILE * xCsvFile;
 
   // Variables de travail
   modbus_t * xBus;
@@ -299,6 +300,7 @@ static xMbPollContext ctx = {
 #ifdef MBPOLL_GPIO_RTS
   .iRtsPin = -1,
 #endif
+  .xCsvFile = NULL,
 
   // Variables de travail
   .xBus = NULL,
@@ -324,14 +326,14 @@ static xChipIoSerial * xChipSerial;
 static const char sChipIoSlaveAddrStr[] = "chipio slave address";
 static const char sChipIoIrqPinStr[] = "chipio irq pin";
 // option -i et -n supplémentaires pour chipio
-static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u0WRhVvwBqi:n:";
+static const char * short_options = "O:m:a:r:c:t:1l:o:p:b:d:s:P:u0WRhVvwBqi:n:";
 
 #else /* USE_CHIPIO == 0 */
 /* constants ================================================================ */
 #ifdef MBPOLL_GPIO_RTS
-static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u0WR::F::hVvwBq";
+static const char * short_options = "O:m:a:r:c:t:1l:o:p:b:d:s:P:u0WR::F::hVvwBq";
 #else
-static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u0WRFhVvwBq";
+static const char * short_options = "O:m:a:r:c:t:1l:o:p:b:d:s:P:u0WRFhVvwBq";
 #endif
 // -----------------------------------------------------------------------------
 #endif /* USE_CHIPIO == 0 */
@@ -339,6 +341,8 @@ static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u0WRFhVvwBq";
 /* private functions ======================================================== */
 void vAllocate (xMbPollContext * ctx);
 void vPrintReadValues (int iAddr, int iCount, xMbPollContext * ctx);
+void vWriteCsvData (int iId, int iAddr, int iCount, xMbPollContext * ctx);
+void vWriteCsvHeader (xMbPollContext * ctx);
 void vPrintConfig (const xMbPollContext * ctx);
 void vPrintCommunicationSetup (const xMbPollContext * ctx);
 void vReportSlaveID (const xMbPollContext * ctx);
@@ -443,6 +447,7 @@ int
 main (int argc, char **argv) {
   int iNextOption, iRet = 0;
   char * p;
+  char * sCsvFile = NULL;
 
   progname = argv[0];
 
@@ -543,6 +548,10 @@ main (int argc, char **argv) {
 
       case 'q':
         ctx.bIsQuiet = true;
+        break;
+
+      case 'O':
+        sCsvFile = optarg;
         break;
 
         // TCP -----------------------------------------------------------------
@@ -785,6 +794,10 @@ main (int argc, char **argv) {
     vSyntaxErrorExit ("You can give a start ref list only for reading");
   }
 
+  if ( (sCsvFile) && (ctx.iStartCount > 1) ) {
+    vSyntaxErrorExit ("CSV output only supports contiguous register addresses (1 start)");
+  }
+
   if (ctx.iSlaveCount == -1) {
 
     ctx.piSlaveAddr = malloc (sizeof (int));
@@ -852,6 +865,11 @@ main (int argc, char **argv) {
     vIoErrorExit ("Connection failed: %s", modbus_strerror (errno));
   }
 
+  // Open CSV file
+  ctx.xCsvFile = fopen(sCsvFile,"w");
+  if (ctx.xCsvFile == NULL) {
+    vIoErrorExit("Unable to open file '%s' for writing: [%i] '%s'", sCsvFile, errno, strerror(errno));
+  }
 
   /*
    * évites que l'esclave prenne l'impulsion de 40µs créée par le driver à
@@ -888,6 +906,10 @@ main (int argc, char **argv) {
     // int32 et float utilisent 2 registres 16 bits
     iNbReg = ( (ctx.eFormat == eFormatInt) || (ctx.eFormat == eFormatFloat)) ?
              ctx.iCount * 2 : ctx.iCount;
+
+    if (ctx.xCsvFile) {
+      vWriteCsvHeader (&ctx);
+    }
 
     // Début de la boucle de scrutation
     do {
@@ -999,6 +1021,9 @@ main (int argc, char **argv) {
 
               ctx.iRxCount++;
               vPrintReadValues (ctx.piStartRef[j], ctx.iCount, &ctx);
+              if (ctx.xCsvFile) {
+                vWriteCsvData (ctx.piSlaveAddr[i], ctx.piStartRef[j], ctx.iCount, &ctx);
+              }
             }
             else {
               ctx.iErrorCount++;
@@ -1016,6 +1041,10 @@ main (int argc, char **argv) {
       }
     }
     while (ctx.bIsPolling);
+  }
+
+  if (ctx.xCsvFile) {
+    fclose(ctx.xCsvFile);
   }
 
   vSigIntHandler (SIGTERM);
@@ -1085,6 +1114,87 @@ vPrintReadValues (int iAddr, int iCount, xMbPollContext * ctx) {
     }
     putchar ('\n');
   }
+}
+
+// -----------------------------------------------------------------------------
+void
+vWriteCsvData (int iId, int iAddr, int iCount, xMbPollContext * ctx) {
+  time_t current_time;
+  struct tm* timeinfo;
+  char rfc3339_time[30];  // RFC 3339 fixed length
+
+  time(&current_time);
+  timeinfo = gmtime(&current_time);
+  strftime(rfc3339_time, sizeof(rfc3339_time), "%Y-%m-%dT%H:%M:%SZ", timeinfo);
+
+  fprintf(ctx->xCsvFile, "%s,%i", rfc3339_time, iId);
+
+  int i;
+  for (i = 0; i < iCount; i++) {
+    switch (ctx->eFormat) {
+
+      case eFormatBin:
+        fprintf (ctx->xCsvFile, ",%c", (DUINT8 (ctx->pvData, i) != FALSE) ? '1' : '0');
+        iAddr++;
+        break;
+
+      case eFormatDec: {
+        uint16_t v = DUINT16 (ctx->pvData, i);
+        fprintf (ctx->xCsvFile, ",%u,%d", v, (int) (int16_t) v);
+        iAddr++;
+      }
+      break;
+
+      case eFormatInt16:
+        fprintf (ctx->xCsvFile, ",%d", (int) (int16_t) (DUINT16 (ctx->pvData, i)));
+        iAddr++;
+        break;
+
+      case eFormatHex:
+        fprintf (ctx->xCsvFile, ",0x%04X", DUINT16 (ctx->pvData, i));
+        iAddr++;
+        break;
+
+      case eFormatString:
+        fprintf (ctx->xCsvFile, ",\"%c%c\"", (char) ((int) (DUINT16 (ctx->pvData, i) / 256)), (char) (DUINT16 (ctx->pvData, i) % 256));
+        iAddr++;
+        break;
+
+      case eFormatInt:
+        fprintf (ctx->xCsvFile, ",%d", lSwapLong (DINT32 (ctx->pvData, i)));
+        iAddr += 2;
+        break;
+
+      case eFormatFloat:
+        fprintf (ctx->xCsvFile, ",%g", fSwapFloat (DFLOAT (ctx->pvData, i)));
+        iAddr += 2;
+        break;
+
+      default:  // Impossible normalement
+        break;
+    }
+  }
+
+  fprintf(ctx->xCsvFile, "\n");
+}
+
+// -----------------------------------------------------------------------------
+void
+vWriteCsvHeader (xMbPollContext * ctx) {
+  int mul = ((ctx->eFormat == eFormatInt) || (ctx->eFormat == eFormatFloat)) ? 2 : 1;
+  fprintf(ctx->xCsvFile, "\"Time (UTC)\",\"ID\"");
+
+  int i;
+  for (i = 0; i < ctx->iCount; i++) {
+    if (ctx->eFormat == eFormatDec) {
+      fprintf(ctx->xCsvFile, ",\"Register[%i][u]\"", ctx->piStartRef[0] + (i*mul));
+      fprintf(ctx->xCsvFile, ",\"Register[%i][s]\"", ctx->piStartRef[0] + (i*mul));
+    } else {
+      fprintf(ctx->xCsvFile, ",\"Register[%i]\"", ctx->piStartRef[0] + (i*mul));
+    }
+  }
+
+  fprintf(ctx->xCsvFile, "\n");
 }
 
 // -----------------------------------------------------------------------------
@@ -1448,6 +1558,8 @@ vUsage (FILE * stream, int exit_msg) {
            "  -l #          Poll rate in ms, ( > %d, %d is default)\n"
            "  -o #          Time-out in seconds (%.2f - %.2f, %.2f s is default)\n"
            "  -q            Quiet mode.  Minimum output only\n"
+           "  -O            Write polling output to CSV file. Supports only one start\n"
+           "                start reference (-r option, no lists)\n"
            "Options for ModBus / TCP : \n"
            "  -p #          TCP port number (%s is default)\n"
            "Options for ModBus RTU : \n"
