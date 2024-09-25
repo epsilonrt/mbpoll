@@ -51,6 +51,12 @@ For Raspbian you have to do a little different :
 
 The Raspbian repository provides Piduino packages for `armhf` architecture for Stretch only.
 
+## Installation using Brew on MacOS and Linux
+Using [Homebrew](https://github.com/Homebrew/brew) to install mbpoll and its dependencies using:
+
+`brew install mbpoll`
+
+
 ## Build from source
 
 For example, for a debian system:
