@@ -24,7 +24,7 @@ function(GetGitVersion _prefix)
   set (ret 1)
 
   if(GIT_FOUND)
-    execute_process(COMMAND ${GIT_EXECUTABLE} describe 
+    execute_process(COMMAND ${GIT_EXECUTABLE} describe --tags 
       RESULT_VARIABLE ret OUTPUT_VARIABLE str OUTPUT_STRIP_TRAILING_WHITESPACE 
       ERROR_QUIET)
   endif()
