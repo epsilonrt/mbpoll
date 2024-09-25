@@ -107,6 +107,8 @@ If you prefer, you can in the place of direct compilation create a package and i
         $ make package
         $ sudo dpkg -i * .deb
 
+In some cases, when installing pkg-config for the first time, it may be necessary to set the $PKG_CONFIG_PATH environment variable before running CMAKE, so pkg_check_module it will be able to find the libmodbus at /usr/local/lib/ directory. This can be done by the following command: export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH. Make sure to adjust the path /usr/local/lib/pkgconfig if your pkgconfig is located in a different path.
+
 That's all !
 
 For Windows, you can follow the instructions in the [README-WINDOWS.md](README-WINDOWS.md) file.
