@@ -3,7 +3,7 @@
 cmake_minimum_required(VERSION 2.9)
 
 # Workspace name
-project(mbpoll)
+project(mbpoll LANGUAGES C)
 
 # This setting is useful for providing JSON file used by CodeLite for code completion
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
