@@ -897,7 +897,11 @@ main (int argc, char **argv) {
         // libmodbus utilise les adresses PDU !
         iStartReg = ctx.piStartRef[0] - ctx.iPduOffset;
 
-        modbus_set_slave (ctx.xBus, ctx.piSlaveAddr[0]);
+        iRet = modbus_set_slave (ctx.xBus, ctx.piSlaveAddr[0]);
+        if ( iRet != 0 ) {
+          vIoErrorExit ("setting slave address failed: %s",
+                        modbus_strerror (errno));
+        }
         ctx.iTxCount++;
 
         // Ecriture ------------------------------------------------------------
@@ -952,7 +956,11 @@ main (int argc, char **argv) {
         // Lecture -------------------------------------------------------------
         for (i = 0; i < ctx.iSlaveCount; i++) {
 
-          modbus_set_slave (ctx.xBus, ctx.piSlaveAddr[i]);
+          iRet = modbus_set_slave (ctx.xBus, ctx.piSlaveAddr[i]);
+          if ( iRet != 0 ) {
+            vIoErrorExit ("setting slave address failed: %s",
+                          modbus_strerror (errno));
+          }
           ctx.iTxCount++;
 
           printf ("-- Polling slave %d...", ctx.piSlaveAddr[i]);
@@ -1091,8 +1099,13 @@ vPrintReadValues (int iAddr, int iCount, xMbPollContext * ctx) {
 void
 vReportSlaveID (const xMbPollContext * ctx) {
   uint8_t ucReport[256];
+  int iRet = 0;
 
-  modbus_set_slave (ctx->xBus, ctx->piSlaveAddr[0]);
+  iRet = modbus_set_slave (ctx->xBus, ctx->piSlaveAddr[0]);
+  if ( iRet != 0 ) {
+    vIoErrorExit ("setting slave address failed: %s",
+                  modbus_strerror (errno));
+  }
   // Affichage de la configuration
   printf ("Protocol configuration: ModBus %s\n", sModeList[ctx->eMode]);
   printf ("Slave configuration...: address = %d, report slave id\n",
@@ -1100,7 +1113,7 @@ vReportSlaveID (const xMbPollContext * ctx) {
 
   vPrintCommunicationSetup (ctx);
 
-  int iRet = modbus_report_slave_id (ctx->xBus, 256, ucReport);
+  iRet = modbus_report_slave_id (ctx->xBus, 256, ucReport);
 
   if (iRet < 0) {
 
