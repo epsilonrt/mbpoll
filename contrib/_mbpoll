@@ -1,0 +1,47 @@
+#compdef mbpoll
+
+__mbpoll_types() {
+  local -a types
+  types=(
+    '0:Discrete output (coil) data type (binary 0 or 1)'
+    '1:Discrete input data type (binary 0 or 1)'
+    '3:16-bit input register data type'
+    '3\:int16:16-bit input register data type with signed int display'
+    '3\:hex:16-bit input register data type with hex display'
+    '3\:string:16-bit input register data type with string (char) display'
+    '3\:int:32-bit integer data type in input register table'
+    '3\:float:32-bit float data type in input register table'
+    '4:16-bit output (holding) register data type (default)'
+    '4\:int16:16-bit output (holding) register data type with signed int display'
+    '4\:hex:16-bit output (holding) register data type with hex display'
+    '4\:string:16-bit output (holding) register data type with string (char) display'
+    '4\:int:32-bit integer data type in output (holding) register table'
+    '4\:float:32-bit float data type in output (holding) register table'
+  )
+  _describe -t types 'type' types
+}
+
+_arguments \
+  '-m[mode (rtu or tcp, TCP is default)]:mode:(rtu tcp)' \
+  '-a[slave address (1-255 for rtu, 0-255 for tcp, 1 is default)]:address:' \
+  '-r[start reference (1 is default)]:reference:' \
+  '-c[number of values to read (1-125, 1 is default)]:count:' \
+  '-t[data type]:type:__mbpoll_types' \
+  '-l[poll rate in ms, (> 100, 1000 is default)]:rate (ms):' \
+  '-o[time-out in seconds (0.01 - 10.00, 1.00 s is default)]:timeout (s):' \
+  '-p[TCP port number (502 is default)]:port:' \
+  '-b[baudrate (1200-921600, 19200 is default)]:baudrate:' \
+  '-d[databits (7 or 8, 8 for RTU)]:databits:(7 8)' \
+  '-s[stopbits (1 or 2, 1 is default)]:stopbits:(1 2)' \
+  '-P[parity (none, even, odd, even is default)]:parity:(none even odd)' \
+  '-0[First reference is 0 (PDU addressing) instead 1]' \
+  '-W[Using function 10 for write a single register]' \
+  '-B[Big endian word order for 32-bit integer and float]' \
+  '-1[Poll only once only, otherwise every poll rate interval]' \
+  '-q[Quiet mode.  Minimum output only]' \
+  '-u[Read device description (RTU only)]' \
+  '-R[RS-485 mode (/RTS on (0) after sending)]' \
+  '-F[RS-485 mode (/RTS on (0) when sending)]' \
+  '-h[Print this help summary page]' \
+  '-V[Print version and exit]' \
+  '-v[Verbose mode]'

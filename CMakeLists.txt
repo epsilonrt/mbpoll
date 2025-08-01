@@ -184,6 +184,17 @@ target_link_libraries(mbpoll ${LINK_OPTIONS})
 install(TARGETS mbpoll RUNTIME DESTINATION bin
         PERMISSIONS ${PROGRAM_PERMISSIONS})
 
+install(
+  FILES contrib/_mbpoll
+  DESTINATION share/zsh/site-functions
+)
+
+# Install Bash completion script
+install(
+  FILES contrib/mbpoll.bash
+  DESTINATION share/bash-completion/completions
+)
+
 if(WIN32)
   add_custom_command(
     TARGET mbpoll PRE_BUILD

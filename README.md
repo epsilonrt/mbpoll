@@ -113,6 +113,36 @@ That's all !
 
 For Windows, you can follow the instructions in the [README-WINDOWS.md](README-WINDOWS.md) file.
 
+## Shell Completion
+
+### Zsh
+
+A Zsh completion script is available for `mbpoll`, enabling advanced tab completion for all options and arguments.
+
+- If you use CMake `make install`, the script `contrib/_mbpoll` will be installed to your system's zsh site-functions directory (typically `/usr/share/zsh/site-functions`).
+- If you install manually, copy `contrib/_mbpoll` to a directory in your `$fpath`. Then restart your shell or run:
+  ```sh
+  autoload -Uz compinit
+  compinit
+  ```
+- Type `mbpoll <TAB>` in Zsh to enjoy completions!
+
+### Bash
+
+A Bash completion script is also provided.
+
+- If you use CMake `make install`, the script `contrib/mbpoll.bash` will be installed to your system's bash-completion directory (typically `/usr/share/bash-completion/completions/`).
+- If you install manually, copy `contrib/mbpoll.bash` to `/etc/bash_completion.d/` or `/usr/share/bash-completion/completions/`.
+- Restart your shell or run:
+  ```sh
+  source /usr/share/bash-completion/completions/mbpoll
+  ```
+- Now, typing `mbpoll <TAB>` in Bash will complete options and arguments.
+
+### Note for Distributions
+
+If your system uses a different completion directory, set `CMAKE_INSTALL_PREFIX` or adjust the install location as needed.
+
 ## Examples
 
 The following command is used to read the input registers 1 and 2 of the
