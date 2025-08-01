@@ -248,6 +248,7 @@ typedef struct xMbPollContext {
   bool bIsChipIo;
   bool bIsBigEndian;
   bool bIsQuiet;
+  bool bPrintHex;
 #ifdef MBPOLL_GPIO_RTS
   int iRtsPin;
 #endif
@@ -296,6 +297,7 @@ static xMbPollContext ctx = {
   .bIsChipIo = false,
   .bIsBigEndian = false,
   .bIsQuiet = false,
+  .bPrintHex = false,
 #ifdef MBPOLL_GPIO_RTS
   .iRtsPin = -1,
 #endif
@@ -331,7 +333,7 @@ static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u0WRhVvwBqi:n:";
 #ifdef MBPOLL_GPIO_RTS
 static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u0WR::F::hVvwBq";
 #else
-static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u0WRFhVvwBq";
+static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u0WRFhVvwBqx";
 #endif
 // -----------------------------------------------------------------------------
 #endif /* USE_CHIPIO == 0 */
@@ -543,6 +545,10 @@ main (int argc, char **argv) {
 
       case 'q':
         ctx.bIsQuiet = true;
+        break;
+
+      case 'x':
+        ctx.bPrintHex = true;
         break;
 
         // TCP -----------------------------------------------------------------
@@ -1028,10 +1034,11 @@ main (int argc, char **argv) {
 // -----------------------------------------------------------------------------
 void
 vPrintReadValues (int iAddr, int iCount, xMbPollContext * ctx) {
+  const char *addr_format = ctx->bPrintHex ? "[0x%04x]: \t" : "[%d]: \t";
   int i;
   for (i = 0; i < iCount; i++) {
 
-    printf ("[%d]: \t", iAddr);
+    printf (addr_format, iAddr);
 
     switch (ctx->eFormat) {
 
@@ -1448,6 +1455,7 @@ vUsage (FILE * stream, int exit_msg) {
            "  -l #          Poll rate in ms, ( > %d, %d is default)\n"
            "  -o #          Time-out in seconds (%.2f - %.2f, %.2f s is default)\n"
            "  -q            Quiet mode.  Minimum output only\n"
+           "  -x            Print address (reference) in hexadecimal format\n"
            "Options for ModBus / TCP : \n"
            "  -p #          TCP port number (%s is default)\n"
            "Options for ModBus RTU : \n"
