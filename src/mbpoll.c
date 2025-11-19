@@ -248,6 +248,8 @@ typedef struct xMbPollContext {
   bool bIsChipIo;
   bool bIsBigEndian;
   bool bIsQuiet;
+  bool bEnableMaxSlaveQuirk;
+  bool bEnableReplyToBroadcastQuirk;
 #ifdef MBPOLL_GPIO_RTS
   int iRtsPin;
 #endif
@@ -296,6 +298,8 @@ static xMbPollContext ctx = {
   .bIsChipIo = false,
   .bIsBigEndian = false,
   .bIsQuiet = false,
+  .bEnableMaxSlaveQuirk = false,
+  .bEnableReplyToBroadcastQuirk = false,
 #ifdef MBPOLL_GPIO_RTS
   .iRtsPin = -1,
 #endif
@@ -324,14 +328,14 @@ static xChipIoSerial * xChipSerial;
 static const char sChipIoSlaveAddrStr[] = "chipio slave address";
 static const char sChipIoIrqPinStr[] = "chipio irq pin";
 // option -i et -n supplémentaires pour chipio
-static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u0WRhVvwBqi:n:";
+static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u0WRhVvwBqi:n:QX";
 
 #else /* USE_CHIPIO == 0 */
 /* constants ================================================================ */
 #ifdef MBPOLL_GPIO_RTS
-static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u0WR::F::hVvwBq";
+static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u0WR::F::hVvwBqQX";
 #else
-static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u0WRFhVvwBq";
+static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u0WRFhVvwBqQX";
 #endif
 // -----------------------------------------------------------------------------
 #endif /* USE_CHIPIO == 0 */
@@ -543,6 +547,14 @@ main (int argc, char **argv) {
 
       case 'q':
         ctx.bIsQuiet = true;
+        break;
+
+      case 'Q':
+        ctx.bEnableMaxSlaveQuirk = true;
+        break;
+
+      case 'X':
+        ctx.bEnableReplyToBroadcastQuirk = true;
         break;
 
         // TCP -----------------------------------------------------------------
@@ -821,6 +833,18 @@ main (int argc, char **argv) {
     vIoErrorExit ("Unable to create the libmodbus context");
   }
   modbus_set_debug (ctx.xBus, ctx.bIsVerbose);
+  if (ctx.bEnableMaxSlaveQuirk || ctx.bEnableReplyToBroadcastQuirk) {
+    int quirks = 0;
+    if (ctx.bEnableMaxSlaveQuirk) {
+      quirks |= MODBUS_QUIRK_MAX_SLAVE;
+    }
+    if (ctx.bEnableReplyToBroadcastQuirk) {
+      quirks |= MODBUS_QUIRK_REPLY_TO_BROADCAST;
+    }
+    if (modbus_enable_quirks (ctx.xBus, quirks) != 0) {
+      vIoErrorExit ("Unable to enable quirk(s): %s", modbus_strerror (errno));
+    }
+  }
 
   if (false == ctx.bIsQuiet) {
     vHello();
@@ -1448,6 +1472,8 @@ vUsage (FILE * stream, int exit_msg) {
            "  -l #          Poll rate in ms, ( > %d, %d is default)\n"
            "  -o #          Time-out in seconds (%.2f - %.2f, %.2f s is default)\n"
            "  -q            Quiet mode.  Minimum output only\n"
+           "  -Q            Enable MAX_SLAVE quirk (accept slave id 0-255)\n"
+           "  -X            Enable REPLY_TO_BROADCAST quirk (forces sending a reply to requests to broadcast address)\n"
            "Options for ModBus / TCP : \n"
            "  -p #          TCP port number (%s is default)\n"
            "Options for ModBus RTU : \n"

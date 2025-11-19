@@ -205,7 +205,9 @@ A complete help is available with the -h option:
       -l #          Poll rate in ms, ( > 100, 1000 is default)
       -o #          Time-out in seconds (0.01 - 10.00, 1.00 s is default)
       -q            Quiet mode.  Minimum output only
-    Options for ModBus / TCP : 
+      -Q            Enable MAX_SLAVE quirk (accept slave id 0-255)
+      -X            Enable REPLY_TO_BROADCAST quirk (forces reply to broadcast)
+    Options for ModBus / TCP :
       -p #          TCP port number (502 is default)
     Options for ModBus RTU : 
       -b #          Baudrate (1200-921600, 19200 is default)
