@@ -289,9 +289,9 @@ static void vVersion (void);
 static void vWarranty (void);
 static void vUsage (FILE *stream, int exit_msg);
 static void vCheckEnum (const char * sName, int iElmt, const int * iList, int iSize);
-static void vCheckIntRange (const char * sName, int i, int min, int max);
+void vCheckIntRange (const char * sName, int i, int min, int max);
 static void vCheckDoubleRange (const char * sName, double d, double min, double max);
-static int iGetInt (const char * sName, const char * sNum, int iBase);
+int iGetInt (const char * sName, const char * sNum, int iBase);
 static double dGetDouble (const char * sName, const char * sNum);
 static int iGetEnum (const char * sName, char * sElmt, const char ** psStrList,
               const int * iList, int iSize);
@@ -1260,7 +1260,7 @@ vCheckEnum (const char * sName, int iElmt, const int * iList, int iSize) {
 }
 
 // -----------------------------------------------------------------------------
-static void
+void
 vCheckIntRange (const char * sName, int i, int min, int max) {
 
   if ( (i < min) || (i > max)) {
@@ -1327,7 +1327,7 @@ sFunctionToStr (eFunctions eFunction) {
 
 // -----------------------------------------------------------------------------
 // -----------------------------------------------------------------------------
-static int
+int
 iGetInt (const char * name, const char * num, int base) {
   char * endptr;
 
