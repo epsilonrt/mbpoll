@@ -279,28 +279,28 @@ static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u0WRFhVvwBqxQX";
 
 /* private functions ======================================================== */
 static void parse_args (int argc, char **argv);
-void vAllocate (xMbPollContext * ctx);
-void vPrintReadValues (int iAddr, int iCount, xMbPollContext * ctx);
-void vPrintConfig (const xMbPollContext * ctx);
-void vPrintCommunicationSetup (const xMbPollContext * ctx);
-void vReportSlaveID (const xMbPollContext * ctx);
-void vHello (void);
-void vVersion (void);
-void vWarranty (void);
-void vUsage (FILE *stream, int exit_msg);
-void vCheckEnum (const char * sName, int iElmt, const int * iList, int iSize);
-void vCheckIntRange (const char * sName, int i, int min, int max);
-void vCheckDoubleRange (const char * sName, double d, double min, double max);
-int iGetInt (const char * sName, const char * sNum, int iBase);
-double dGetDouble (const char * sName, const char * sNum);
-int iGetEnum (const char * sName, char * sElmt, const char ** psStrList,
+static void vAllocate (xMbPollContext * ctx);
+static void vPrintReadValues (int iAddr, int iCount, xMbPollContext * ctx);
+static void vPrintConfig (const xMbPollContext * ctx);
+static void vPrintCommunicationSetup (const xMbPollContext * ctx);
+static void vReportSlaveID (const xMbPollContext * ctx);
+static void vHello (void);
+static void vVersion (void);
+static void vWarranty (void);
+static void vUsage (FILE *stream, int exit_msg);
+static void vCheckEnum (const char * sName, int iElmt, const int * iList, int iSize);
+static void vCheckIntRange (const char * sName, int i, int min, int max);
+static void vCheckDoubleRange (const char * sName, double d, double min, double max);
+static int iGetInt (const char * sName, const char * sNum, int iBase);
+static double dGetDouble (const char * sName, const char * sNum);
+static int iGetEnum (const char * sName, char * sElmt, const char ** psStrList,
               const int * iList, int iSize);
-const char * sEnumToStr (int iElmt, const int * iList,
+static const char * sEnumToStr (int iElmt, const int * iList,
                          const char ** psStrList, int iSize);
-const char * sFunctionToStr (eFunctions eFunction);
-const char * sModeToStr (eModes eMode);
-void vCleanup (void);
-void vSigIntHandler (int sig);
+static const char * sFunctionToStr (eFunctions eFunction);
+static const char * sModeToStr (eModes eMode);
+static void vCleanup (void);
+static void vSigIntHandler (int sig);
 static void mb_delay (unsigned long d);
 
 #if defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
@@ -384,29 +384,25 @@ main (int argc, char **argv) {
   parse_args (argc, argv);
 
   // End of parameter value verification and context creation
+  // Check slave addresses
+  int iMinAddr = (ctx.eMode == eModeRtu) ? RTU_SLAVEADDR_MIN : TCP_SLAVEADDR_MIN;
+  if (ctx.bEnableMaxSlaveQuirk) {
+    iMinAddr = 0;
+  }
+  for (i = 0; i < ctx.iSlaveCount; i++) {
+    vCheckIntRange (sSlaveAddrStr, ctx.piSlaveAddr[i],
+                    iMinAddr, SLAVEADDR_MAX);
+  }
+
   switch (ctx.eMode) {
-    case eModeRtu: {
-      // Allow slave address 0 when MAX_SLAVE quirk is enabled (per -Q/-X options)
-      int iMinAddr = ctx.bEnableMaxSlaveQuirk ? 0 : RTU_SLAVEADDR_MIN;
-      for (i = 0; i < ctx.iSlaveCount; i++) {
-        vCheckIntRange (sSlaveAddrStr, ctx.piSlaveAddr[i],
-                        iMinAddr, SLAVEADDR_MAX);
-      }
+    case eModeRtu:
       ctx.xBus = modbus_new_rtu (ctx.sDevice, ctx.xRtu.baud, ctx.xRtu.parity,
                                  ctx.xRtu.dbits, ctx.xRtu.sbits);
       break;
-    }
 
-    case eModeTcp: {
-      // Apply consistent quirk logic for symmetry (TCP_SLAVEADDR_MIN is already 0)
-      int iMinAddr = ctx.bEnableMaxSlaveQuirk ? 0 : TCP_SLAVEADDR_MIN;
-      for (i = 0; i < ctx.iSlaveCount; i++) {
-        vCheckIntRange (sSlaveAddrStr, ctx.piSlaveAddr[i],
-                        iMinAddr, SLAVEADDR_MAX);
-      }
+    case eModeTcp:
       ctx.xBus = modbus_new_tcp_pi (ctx.sDevice, ctx.sTcpPort);
       break;
-    }
 
     default:
       break;
@@ -639,10 +635,6 @@ main (int argc, char **argv) {
               if ((next_addr + unit_size_regs - start_addr) > max_count) {
                 break;
               }
-              // Check for overflow before next iteration
-              if (next_addr > INT_MAX - unit_size_regs) {
-                break;
-              }
               expected_next_addr = next_addr + unit_size_regs;
               k++;
             }
@@ -740,7 +732,7 @@ main (int argc, char **argv) {
 /* private functions ======================================================== */
 
 // -----------------------------------------------------------------------------
-void
+static void
 vPrintReadValues (int iAddr, int iCount, xMbPollContext * ctx) {
   int i;
   for (i = 0; i < iCount; i++) {
@@ -808,7 +800,7 @@ vPrintReadValues (int iAddr, int iCount, xMbPollContext * ctx) {
 }
 
 // -----------------------------------------------------------------------------
-void
+static void
 vReportSlaveID (const xMbPollContext * ctx) {
   uint8_t ucReport[256];
   int iRet;
@@ -871,7 +863,7 @@ vReportSlaveID (const xMbPollContext * ctx) {
 }
 
 // -----------------------------------------------------------------------------
-void
+static void
 vPrintCommunicationSetup (const xMbPollContext * ctx) {
 
   if (ctx->eMode == eModeRtu) {
@@ -910,7 +902,7 @@ vPrintCommunicationSetup (const xMbPollContext * ctx) {
 }
 
 // -----------------------------------------------------------------------------
-void
+static void
 vPrintConfig (const xMbPollContext * ctx) {
 
   // Affichage de la configuration
@@ -973,7 +965,7 @@ vPrintConfig (const xMbPollContext * ctx) {
 // -----------------------------------------------------------------------------
 // Memory allocation for data to write or read
 // Includes overflow protection for size calculations
-void
+static void
 vAllocate (xMbPollContext * ctx) {
 
   size_t ulDataSize = ctx->iCount;
@@ -1012,7 +1004,7 @@ vAllocate (xMbPollContext * ctx) {
 }
 
 // -----------------------------------------------------------------------------
-void
+static void
 vCleanup (void) {
 
   if ( (ctx.bIsPolling) && (!ctx.bIsWrite)) {
@@ -1047,7 +1039,7 @@ vCleanup (void) {
 }
 
 // -----------------------------------------------------------------------------
-void
+static void
 vSigIntHandler (int sig) {
   g_bExitSignal = sig;
 }
@@ -1075,14 +1067,14 @@ vFailureExit (bool bHelp, const char *format, ...) {
 }
 
 // -----------------------------------------------------------------------------
-void
+static void
 vVersion (void)  {
   printf ("%s\n", VERSION_SHORT);
   exit (EXIT_SUCCESS);
 }
 
 // -----------------------------------------------------------------------------
-void
+static void
 vWarranty (void) {
   printf (
     "Copyright (c) 2015-2025 %s, All rights reserved.\n\n"
@@ -1104,7 +1096,7 @@ vWarranty (void) {
 }
 
 // -----------------------------------------------------------------------------
-void
+static void
 vHello (void) {
   printf ("mbpoll %s - ModBus(R) Master Simulator\n",
           VERSION_SHORT);
@@ -1115,7 +1107,7 @@ vHello (void) {
 }
 
 // -----------------------------------------------------------------------------
-void
+static void
 vUsage (FILE * stream, int exit_msg) {
   char * sMyName =  basename (progname);
   fprintf (stream,
@@ -1254,7 +1246,7 @@ vUsage (FILE * stream, int exit_msg) {
 }
 
 // -----------------------------------------------------------------------------
-void
+static void
 vCheckEnum (const char * sName, int iElmt, const int * iList, int iSize) {
   int i;
   for (i = 0; i < iSize; i++) {
@@ -1268,7 +1260,7 @@ vCheckEnum (const char * sName, int iElmt, const int * iList, int iSize) {
 }
 
 // -----------------------------------------------------------------------------
-void
+static void
 vCheckIntRange (const char * sName, int i, int min, int max) {
 
   if ( (i < min) || (i > max)) {
@@ -1278,7 +1270,7 @@ vCheckIntRange (const char * sName, int i, int min, int max) {
 }
 
 // -----------------------------------------------------------------------------
-void
+static void
 vCheckDoubleRange (const char * sName, double d, double min, double max) {
 
   if ( (d < min) || (d > max)) {
@@ -1288,7 +1280,7 @@ vCheckDoubleRange (const char * sName, double d, double min, double max) {
 }
 
 // -----------------------------------------------------------------------------
-int
+static int
 iGetEnum (const char * sName, char * sElmt, const char ** psStrList,
           const int * iList, int iSize) {
   int i;
@@ -1305,7 +1297,7 @@ iGetEnum (const char * sName, char * sElmt, const char ** psStrList,
 }
 
 // -----------------------------------------------------------------------------
-const char *
+static const char *
 sEnumToStr (int iElmt, const int * iList, const char ** psStrList, int iSize) {
   int i;
 
@@ -1319,14 +1311,14 @@ sEnumToStr (int iElmt, const int * iList, const char ** psStrList, int iSize) {
 }
 
 // -----------------------------------------------------------------------------
-const char *
+static const char *
 sModeToStr (eModes eMode) {
 
   return sEnumToStr (eMode, iModeList, sModeList, SIZEOF_ILIST (iModeList));
 }
 
 // -----------------------------------------------------------------------------
-const char *
+static const char *
 sFunctionToStr (eFunctions eFunction) {
 
   return sEnumToStr (eFunction, iFunctionList, sFunctionList,
@@ -1335,7 +1327,7 @@ sFunctionToStr (eFunctions eFunction) {
 
 // -----------------------------------------------------------------------------
 // -----------------------------------------------------------------------------
-int
+static int
 iGetInt (const char * name, const char * num, int base) {
   char * endptr;
 
@@ -1356,7 +1348,7 @@ iGetInt (const char * name, const char * num, int base) {
 }
 
 // -----------------------------------------------------------------------------
-double
+static double
 dGetDouble (const char * name, const char * num) {
   char * endptr;
 

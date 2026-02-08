@@ -19,7 +19,7 @@ kill $SERVER_PID 2>/dev/null || true
 wait $SERVER_PID 2>/dev/null || true
 
 # Check lines
-line_count=$(grep "^\[" "$OUTPUT_FILE" | wc -l)
+line_count=$(grep -c "^\[" "$OUTPUT_FILE")
 echo "Lines read: $line_count"
 if [ "$line_count" -ne 601 ]; then
     echo "Error: Expected 601 lines, got $line_count"
@@ -32,7 +32,12 @@ for i in {1..10}; do
     $SERVER_BIN tcp 127.0.0.1 > /dev/null 2>&1 &
     SERVER_PID=$!
     # Wait for server to bind
-    sleep 0.05
+    for retry in {1..50}; do
+        if ss -lnt | grep -q ":1502 "; then
+            break
+        fi
+        sleep 0.01
+    done
     $MBPOLL_BIN -m tcp -a 1 -r 400:1000 -t 4 -1 -o 1.0 -p 1502 127.0.0.1 > /dev/null 2>&1
     kill $SERVER_PID 2>/dev/null || true
     wait $SERVER_PID 2>/dev/null || true

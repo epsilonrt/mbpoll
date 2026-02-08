@@ -1,14 +1,16 @@
-#ifndef _MBPOLL_UTILS_H_
-#define _MBPOLL_UTILS_H_
+#ifndef MBPOLL_UTILS_H
+#define MBPOLL_UTILS_H
 
 #include <stdbool.h>
+#include <stdint.h>
 
-#ifndef MIN
-#define MIN(a,b) (((a)<(b))?(a):(b))
-#endif
-#ifndef MAX
-#define MAX(a,b) (((a)>(b))?(a):(b))
-#endif
+static inline int mb_min(int a, int b) {
+    return (a < b) ? a : b;
+}
+
+static inline int mb_max(int a, int b) {
+    return (a > b) ? a : b;
+}
 
 void vFailureExit (bool bHelp, const char *format, ...);
 
@@ -17,8 +19,6 @@ void vFailureExit (bool bHelp, const char *format, ...);
 
 int * iGetIntList (const char * name, const char * sList, int * iLen);
 void vPrintIntList (int * iList, int iLen);
-
-#include <stdint.h>
 
 /**
  * @brief Swaps the two 16-bit words of a 32-bit integer if big endian flag is set.
@@ -38,4 +38,4 @@ int32_t lSwapLong(int32_t l, bool bIsBigEndian);
  */
 float fSwapFloat(float f, bool bIsBigEndian);
 
-#endif /* _MBPOLL_UTILS_H_ */
+#endif /* MBPOLL_UTILS_H */

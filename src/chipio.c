@@ -87,7 +87,8 @@ bool bChipIoSetup(xMbPollContext * ctx) {
         }
       }
       else {
-
+        iChipIoClose(ctx->xChip->xChip);
+        ctx->xChip->xChip = NULL;
         vIoErrorExit ("serial chipio port failure");
       }
     }
@@ -120,11 +121,6 @@ void vChipIoClose(xMbPollContext * ctx) {
         iChipIoClose(ctx->xChip->xChip);
         ctx->xChip->xChip = NULL;
     }
-    free(ctx->xChip);
-    ctx->xChip = NULL;
-  }
-#else
-  if (ctx->xChip) {
     free(ctx->xChip);
     ctx->xChip = NULL;
   }

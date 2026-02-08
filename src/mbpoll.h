@@ -37,6 +37,14 @@ typedef enum {
   eModeUnknown = -1,
 } eModes;
 
+/*
+ * These values intentionally correspond to the Modbus function codes:
+ * 0: Coil (Discrete Output)
+ * 1: Discrete Input
+ * 3: Input Register
+ * 4: Holding Register (Output Register)
+ * eFuncUnknown is a sentinel for unmapped codes.
+ */
 typedef enum {
   eFuncCoil = 0,
   eFuncDiscreteInput = 1,

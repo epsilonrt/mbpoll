@@ -1,7 +1,7 @@
 /* Copyright (c) 2015-2025 Pascal JEAN, All rights reserved. */
 
-#ifndef _CHIPIO_H_
-#define _CHIPIO_H_
+#ifndef CHIPIO_H
+#define CHIPIO_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -39,4 +39,4 @@ const char * sChipIoGetAddStr(const struct xMbPollContext * ctx);
 }
 #endif
 
-#endif /* _CHIPIO_H_ */
+#endif /* CHIPIO_H */

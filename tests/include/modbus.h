@@ -1,5 +1,5 @@
-#ifndef _MODBUS_H_
-#define _MODBUS_H_
+#ifndef MODBUS_H_INCLUDED
+#define MODBUS_H_INCLUDED
 
 #include <stdint.h>
 #include <sys/time.h>
@@ -12,7 +12,7 @@
 #define TRUE 1
 #endif
 
-typedef struct _modbus modbus_t;
+typedef struct modbus_struct modbus_t;
 
 #define MODBUS_RTU_RTS_NONE 0
 #define MODBUS_RTU_RTS_UP   1
@@ -33,6 +33,7 @@ int modbus_connect(modbus_t *ctx);
 void modbus_free(modbus_t *ctx);
 void modbus_close(modbus_t *ctx);
 int modbus_set_slave(modbus_t *ctx, int slave);
+int modbus_get_slave(modbus_t *ctx);
 
 int modbus_write_bit(modbus_t *ctx, int addr, int status);
 int modbus_write_bits(modbus_t *ctx, int addr, int nb, const uint8_t *src);
@@ -52,5 +53,4 @@ int modbus_rtu_set_custom_rts(modbus_t *ctx, void (*set_rts) (modbus_t *ctx, int
 int modbus_get_byte_timeout(modbus_t *ctx, uint32_t *to_sec, uint32_t *to_usec);
 int modbus_set_response_timeout(modbus_t *ctx, uint32_t to_sec, uint32_t to_usec);
 
-#endif /* _MODBUS_H_ */
-int modbus_get_slave(modbus_t *ctx);
+#endif /* MODBUS_H_INCLUDED */

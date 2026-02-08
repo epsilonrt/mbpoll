@@ -1,3 +1,5 @@
+#include <limits.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -12,94 +14,82 @@
 #endif
 
 // -----------------------------------------------------------------------------
-// Weak implementation of vFailureExit for standalone compilation.
-// When linked with mbpoll.c, the stronger definition there takes precedence.
-// This enables utils.c to be compiled and tested independently.
-// -----------------------------------------------------------------------------
-#ifndef SKIP_FAILURE_EXIT
-#if defined(__GNUC__) || defined(__clang__)
-__attribute__((weak))
-#endif
-void
-vFailureExit (bool bHelp, const char *format, ...) {
-  va_list va;
-  va_start (va, format);
-  fprintf (stderr, "utils: ");
-  vfprintf (stderr, format, va);
-  if (bHelp) {
-    fprintf (stderr, " ! (syntax error)\n");
-  }
-  else {
-    fprintf (stderr, ".\n");
-  }
-  va_end (va);
-  fflush (stderr);
-  exit (EXIT_FAILURE);
-}
-#endif
+static int parse_next_element(const char **p, int *start, int *end, int *count, const char *name) {
+  char *endptr;
+  errno = 0;
+  long val = strtol(*p, &endptr, 0);
 
-// -----------------------------------------------------------------------------
+  if (endptr == *p) {
+    vSyntaxErrorExit("Illegal %s value: %s", name, *p);
+  }
+
+  // Check for overflow
+  if (errno == ERANGE || val > INT_MAX || val < INT_MIN) {
+    vSyntaxErrorExit("%s value out of range: %ld", name, val);
+  }
+
+  *start = (int)val;
+  *p = endptr;
+
+  if (**p == ':') {
+    (*p)++; // Skip ':'
+    errno = 0;
+    val = strtol(*p, &endptr, 0);
+    if (endptr == *p) {
+      vSyntaxErrorExit("Illegal %s range end: %s", name, *p);
+    }
+    if (errno == ERANGE || val > INT_MAX || val < INT_MIN) {
+      vSyntaxErrorExit("%s value out of range: %ld", name, val);
+    }
+    *end = (int)val;
+    *p = endptr;
+
+    int min = mb_min(*start, *end);
+    int max = mb_max(*start, *end);
+    *count += (max - min + 1);
+
+    // Normalize start/end for caller convenience if needed,
+    // but here we just need the count and the values.
+    // Let's store the range as min:max
+    *start = min;
+    *end = max;
+  } else {
+    *end = *start;
+    (*count)++;
+  }
+
+  if (**p == ',') {
+    (*p)++;
+  } else if (**p != '\0') {
+    vSyntaxErrorExit("Illegal %s delimiter: '%c'", name, **p);
+  }
+
+  return 0;
+}
+
+/**
+ * Parses a string list of integers (e.g. "1,2,5-10").
+ *
+ * @param name   The name of the parameter (used for error reporting).
+ * @param sList  The string list to parse.
+ * @param iLen   Output parameter returning the number of elements.
+ *
+ * Note: Be careful not to swap 'name' and 'sList'.
+ */
 int *
 iGetIntList (const char * name, const char * sList, int * iLen) {
   // 12,3,5:9,45
 
   int * iList = NULL;
-  int i, iFirst = 0, iCount = 0;
-  bool bIsLast = false;
+  int iCount = 0;
   const char * p = sList;
-  char * endptr;
 
   PDEBUG ("iGetIntList(%s)\n", sList);
 
-  // Count and verify the integer list
+  // Pass 1: Count elements
   while (*p) {
-
-    i = strtol (p, &endptr, 0);
-    if (endptr == p) {
-
-      vSyntaxErrorExit ("Illegal %s value: %s", name, p);
-    }
-    p = endptr;
-    PDEBUG ("Integer found: %d\n", i);
-
-    if (*p == ':') {
-
-      // i is the first of a range first:last
-      if (bIsLast) {
-        // Cannot have 2 ':' in a row!
-        vSyntaxErrorExit ("Illegal %s delimiter: '%c'", name, *p);
-      }
-      PDEBUG ("Is First\n");
-      iFirst = i;
-      bIsLast = true;
-    }
-    else if ( (*p == ',') || (*p == 0)) {
-
-      if (bIsLast) {
-        int iRange, iLast;
-
-        // i is the last of a range first:last
-        iLast = MAX (iFirst, i);
-        iFirst = MIN (iFirst, i);
-        iRange = iLast - iFirst + 1;
-        PDEBUG ("Is Last, add %d items\n", iRange);
-        iCount += iRange;
-        bIsLast = false;
-      }
-      else {
-
-        iCount++;
-      }
-    }
-    else {
-
-      vSyntaxErrorExit ("Illegal %s delimiter: '%c'", name, *p);
-    }
-
-    if (*p) {
-
-      p++; // Skip the delimiter
-    }
+    int start, end;
+    parse_next_element(&p, &start, &end, &iCount, name);
     PDEBUG ("iCount=%d\n", iCount);
   }
 
@@ -115,42 +105,14 @@ iGetIntList (const char * name, const char * sList, int * iLen) {
       vIoErrorExit ("Memory allocation failed for %s list", name);
     }
 
-    // Assignment
+    // Pass 2: Fill list
     p = sList;
     while (*p) {
+      int start, end, dummy_count = 0;
+      parse_next_element(&p, &start, &end, &dummy_count, name);
 
-      i = strtol (p, &endptr, 0);
-      p = endptr;
-
-      if (*p == ':') {
-
-        // i is the first of a range first:last
-        iFirst = i;
-        bIsLast = true;
-      }
-      else if ( (*p == ',') || (*p == 0)) {
-
-        if (bIsLast) {
-
-          // i is the last of a range first:last
-          int iLast = MAX (iFirst, i);
-          iFirst = MIN (iFirst, i);
-
-          for (i = iFirst; i <= iLast; i++) {
-
-            iList[iIndex++] = i;
-          }
-          bIsLast = false;
-        }
-        else {
-
-          iList[iIndex++] = i;
-        }
-      }
-
-      if (*p) {
-
-        p++; // Skip the delimiter
+      for (int i = start; i <= end; i++) {
+        iList[iIndex++] = i;
       }
     }
 #ifdef DEBUG
