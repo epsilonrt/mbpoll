@@ -13,12 +13,12 @@
  * You should have received a copy of the GNU General Public License
  * along with mbpoll.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef _MBPOLL_GPIO_RTS_H_
-#define _MBPOLL_GPIO_RTS_H_
+#ifndef MBPOLL_GPIO_RTS_H
+#define MBPOLL_GPIO_RTS_H
 
 #include <modbus.h>
 
 int  init_custom_rts (int num, int act);
 void set_custom_rts (modbus_t *ctx, int on);
 
-#endif /* _MBPOLL_GPIO_RTS_H_ defined */
+#endif /* MBPOLL_GPIO_RTS_H */

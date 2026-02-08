@@ -13,8 +13,8 @@
  * You should have received a copy of the GNU General Public License
  * along with mbpoll.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef _CONFIG_H_
-#define _CONFIG_H_
+#ifndef MBPOLL_CONFIG_H
+#define MBPOLL_CONFIG_H
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -57,4 +57,4 @@ extern "C" {
 #ifdef __cplusplus
 }
 #endif
-#endif /* _CONFIG_H_ defined */
+#endif /* MBPOLL_CONFIG_H */

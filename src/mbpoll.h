@@ -14,8 +14,8 @@
  * along with mbpoll.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _MBPOLL_H_
-#define _MBPOLL_H_
+#ifndef MBPOLL_H
+#define MBPOLL_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -122,4 +122,4 @@ int iGetInt (const char * sName, const char * sNum, int iBase);
 }
 #endif
 
-#endif /* _MBPOLL_H_ */
+#endif /* MBPOLL_H */

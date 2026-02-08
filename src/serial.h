@@ -13,8 +13,8 @@
  * You should have received a copy of the GNU General Public License
  * along with mbpoll.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef _MBPOLL_SERIAL_H_
-#define _MBPOLL_SERIAL_H_
+#ifndef MBPOLL_SERIAL_H
+#define MBPOLL_SERIAL_H
 
 /**
  * @enum eSerialDataBits
@@ -133,4 +133,4 @@ const char * sSerialDataBitsToStr (eSerialDataBits eDataBits);
 const char * sSerialStopBitsToStr (eSerialStopBits eStopBits);
 
 /* ========================================================================== */
-#endif /* _MBPOLL_SERIAL_H_ */
+#endif /* MBPOLL_SERIAL_H */
