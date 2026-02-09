@@ -12,27 +12,67 @@ on:
 jobs:
   build-deb:
     runs-on: ubuntu-latest
-
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [amd64, arm64, armhf]
+    
     steps:
     - uses: actions/checkout@v4
       with:
         fetch-depth: 0
 
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y cmake pkg-config libmodbus-dev
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v3
+      with:
+        platforms: arm64,arm
 
-    - name: Configure CMake
-      run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+    - name: Install dependencies for ${{ matrix.arch }}
+      run: |
+        if [ "${{ matrix.arch }}" = "amd64" ]; then
+          sudo apt-get update
+          sudo apt-get install -y cmake pkg-config libmodbus-dev
+        else
+          # Pour cross-compilation
+          sudo dpkg --add-architecture ${{ matrix.arch }}
+          sudo apt-get update
+          sudo apt-get install -y cmake pkg-config crossbuild-essential-${{ matrix.arch }}
+          
+          # Installation de libmodbus pour l'architecture cible
+          if [ "${{ matrix.arch }}" = "arm64" ]; then
+            sudo apt-get install -y libmodbus-dev:arm64
+          elif [ "${{ matrix.arch }}" = "armhf" ]; then
+            sudo apt-get install -y libmodbus-dev:armhf
+          fi
+        fi
+
+    - name: Configure CMake for ${{ matrix.arch }}
+      run: |
+        if [ "${{ matrix.arch }}" = "amd64" ]; then
+          cmake -B build -DCMAKE_BUILD_TYPE=Release
+        elif [ "${{ matrix.arch }}" = "arm64" ]; then
+          cmake -B build -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_SYSTEM_NAME=Linux \
+            -DCMAKE_SYSTEM_PROCESSOR=aarch64 \
+            -DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc \
+            -DCMAKE_CXX_COMPILER=aarch64-linux-gnu-g++
+        elif [ "${{ matrix.arch }}" = "armhf" ]; then
+          cmake -B build -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_SYSTEM_NAME=Linux \
+            -DCMAKE_SYSTEM_PROCESSOR=arm \
+            -DCMAKE_C_COMPILER=arm-linux-gnueabihf-gcc \
+            -DCMAKE_CXX_COMPILER=arm-linux-gnueabihf-g++
+        fi
 
     - name: Build
       run: cmake --build build --config Release
 
     - name: Run tests
+      if: matrix.arch == 'amd64'
       run: ctest --test-dir build --build-config Release --output-on-failure
 
     - name: Check binary
+      if: matrix.arch == 'amd64'
       run: |
         ./build/bin/mbpoll -V
         ./build/bin/mbpoll -h || true
@@ -52,10 +92,9 @@ jobs:
           exit 1
         fi
         DEB_FILE="${deb_files[0]}"
-        ARCH=$(dpkg --print-architecture)
         VERSION=$(dpkg-deb -f "$DEB_FILE" Version)
         echo "DEB_FILE=$DEB_FILE" >> "$GITHUB_OUTPUT"
-        echo "DEB_NAME=mbpoll_${VERSION}_linux_${ARCH}" >> "$GITHUB_OUTPUT"
+        echo "DEB_NAME=mbpoll_${VERSION}_linux_${{ matrix.arch }}" >> "$GITHUB_OUTPUT"
         dpkg-deb --info "$DEB_FILE"
         echo "---"
         dpkg-deb --contents "$DEB_FILE"

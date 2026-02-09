@@ -35,22 +35,40 @@ floating single precision.
 
 ## Quickstart guide
 
-The fastest and safest way to install mbpoll is to use the APT 
-repository from [piduino.org](http://apt.piduino.org), so you should do the following :
+### Linux (Debian/Ubuntu)
 
-    wget -O- http://www.piduino.org/piduino-key.asc | sudo gpg --dearmor --yes --output /usr/share/keyrings/piduino-archive-keyring.gpg
-    echo "deb [signed-by=/usr/share/keyrings/piduino-archive-keyring.gpg] http://apt.piduino.org $(lsb_release -c -s) piduino" | sudo tee /etc/apt/sources.list.d/piduino.list
-    sudo apt update
-    sudo apt install mbpoll
+The recommended way to install mbpoll on Linux (Debian/Ubuntu) is via the APT repository from [piduino.org](http://apt.piduino.org) :
 
-This repository provides `mbpoll` and `libmodbus` (version 3.1.7) packages for
-`i386`, `amd64`, `armhf` and `arm64` architectures.
+```sh
+wget -O- http://www.piduino.org/piduino-key.asc | sudo gpg --dearmor --yes --output /usr/share/keyrings/piduino-archive-keyring.gpg
+echo "deb [signed-by=/usr/share/keyrings/piduino-archive-keyring.gpg] http://apt.piduino.org $(lsb_release -c -s) piduino" | sudo tee /etc/apt/sources.list.d/piduino.list
+sudo apt update
+sudo apt install mbpoll
+```
+
+This repository provides `mbpoll` packages for `i386`, `amd64`, `armhf` and `arm64` architectures.
+
+### Download pre-built binaries
+
+You can also download pre-built installable binaries for Linux, macOS and Windows from the [Releases page](https://github.com/epsilonrt/mbpoll/releases).
+
+For Linux, `.deb` packages are available for easy installation.
+For macOS, `.pkg` and `.tar.gz` packages are provided.
+For Windows, an installer (`mbpoll-setup.exe`) is available.
+
+### Windows installer: SmartScreen warning
+
+mbpoll is an open source project and the Windows installer is **not signed** with a commercial certificate. As a result, Windows and Microsoft Edge may display a warning when downloading or running the installer:
+
+- Edge may block the download and require you to force it.
+- Windows Defender SmartScreen may show a warning page and ask you to confirm before installing.
+
+This is normal for open source projects. You can safely bypass these warnings by clicking "More info" then "Run anyway". For more details, see the [documentation](README-WINDOWS.md).
 
 ## Installation using Brew on macOS and Linux
 Using [Homebrew](https://github.com/Homebrew/brew) to install mbpoll and its dependencies using:
 
 `brew install mbpoll`
-
 
 ## Build from source
 
@@ -153,8 +171,9 @@ On Unix systems, a man page is also available: `man mbpoll`
 
     usage : mbpoll [ options ] device|host [ writevalues... ] [ options ]
 
-    ModBus Master Simulator. It allows to read and write in ModBus slave registers
-                             connected by serial (RTU only) or TCP.
+    ModBus(R) Master Simulator.
+    Allows to read and write in ModBus slave registers connected by
+    serial (RTU only) or TCP.
 
     Arguments :
       device        Serial port when using ModBus RTU protocol
@@ -167,14 +186,14 @@ On Unix systems, a man page is also available: `man mbpoll`
                     If negative numbers are provided, it will precede the list of
                     data to be written by two dashes ('--'). for example :
                     mbpoll -t4:int /dev/ttyUSB0 -- 123 -1568 8974 -12
-    General options : 
+    General options :
       -m #          mode (rtu or tcp, TCP is default)
       -a #          Slave address (1-255 for rtu, 0-255 for tcp, 1 is default)
                     for reading, it is possible to give an address list
                     separated by commas or colons, for example :
                     -a 32,33,34,36:40 read [32,33,34,36,37,38,39,40]
       -r #          Start reference (1 is default)
-                    for reading, it is possible to give an address list
+                    for reading, it is possible to give a reference list
                     separated by commas or colons
       -c #          Number of values to read (1-125, 1 is default)
       -u            Read the description of the type, the current status, and other
@@ -194,6 +213,7 @@ On Unix systems, a man page is also available: `man mbpoll`
       -t 4:int      32-bit integer data type in output (holding) register table
       -t 4:float    32-bit float data type in output (holding) register table
       -0            First reference is 0 (PDU addressing) instead 1
+      -W            Using function 10 for write a single register
       -B            Big endian word order for 32-bit integer and float
       -1            Poll only once only, otherwise every poll rate interval
       -l #          Poll rate in ms, ( > 100, 1000 is default)
@@ -202,22 +222,21 @@ On Unix systems, a man page is also available: `man mbpoll`
       -x            Print address (reference) in hexadecimal format
       -Q            Enable MAX_SLAVE quirk (accept slave id 0-255)
       -X            Enable REPLY_TO_BROADCAST quirk (send reply to broadcast)
-    Options for ModBus / TCP : 
+    Options for ModBus / TCP :
       -p #          TCP port number (502 is default)
-    Options for ModBus RTU : 
+    Options for ModBus RTU :
       -b #          Baudrate (1200-921600, 19200 is default)
       -d #          Databits (7 or 8, 8 for RTU)
       -s #          Stopbits (1 or 2, 1 is default)
       -P #          Parity (none, even, odd, even is default)
-      -R [#]        RS-485 mode (/RTS on (0) after sending)
-                     Optional parameter for the GPIO RTS pin number
-      -F [#]        RS-485 mode (/RTS on (0) when sending)
-                     Optional parameter for the GPIO RTS pin number
+      -R            RS-485 mode (/RTS on (0) after sending)
+      -F            RS-485 mode (/RTS on (0) when sending)
 
       -h            Print this help summary page
       -V            Print version and exit
       -v            Verbose mode.  Causes mbpoll to print debugging messages about
                     its progress.  This is helpful in debugging connection...
+
 
 ## Contributing
 
