@@ -38,8 +38,16 @@ jobs:
           
           # Configure ARM repositories (Ubuntu uses ports.ubuntu.com for ARM)
           sudo sed -i 's/^deb http/deb [arch=amd64] http/' /etc/apt/sources.list
+          sudo sed -i 's/^deb http/deb [arch=amd64] http/' /etc/apt/sources.list.d/*.list 2>/dev/null || true
+          
+          # Fix security sources (uses DEB822 format on Ubuntu 24.04+)
+          if [ -f /etc/apt/sources.list.d/ubuntu.sources ]; then
+            sudo sed -i 's/^Types:/Architectures: amd64\nTypes:/' /etc/apt/sources.list.d/ubuntu.sources
+          fi
+          
           echo "deb [arch=${{ matrix.arch }}] http://ports.ubuntu.com/ubuntu-ports/ $(lsb_release -sc) main restricted universe multiverse" | sudo tee /etc/apt/sources.list.d/${{ matrix.arch }}.list
           echo "deb [arch=${{ matrix.arch }}] http://ports.ubuntu.com/ubuntu-ports/ $(lsb_release -sc)-updates main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list.d/${{ matrix.arch }}.list
+          echo "deb [arch=${{ matrix.arch }}] http://ports.ubuntu.com/ubuntu-ports/ $(lsb_release -sc)-backports main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list.d/${{ matrix.arch }}.list
           echo "deb [arch=${{ matrix.arch }}] http://ports.ubuntu.com/ubuntu-ports/ $(lsb_release -sc)-security main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list.d/${{ matrix.arch }}.list
           
           sudo apt-get update
