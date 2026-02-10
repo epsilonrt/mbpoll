@@ -417,6 +417,7 @@ main (int argc, char **argv) {
     vIoErrorExit ("Unable to create the libmodbus context");
   }
   modbus_set_debug (ctx.xBus, ctx.bIsVerbose);
+  modbus_enable_quirks(ctx.xBus, MODBUS_QUIRK_ALL);
 
   // Enable libmodbus quirks if requested
   if (ctx.bEnableMaxSlaveQuirk || ctx.bEnableReplyToBroadcastQuirk) {
