@@ -67,7 +67,7 @@
 #endif
 
 #ifndef NDEBUG
-#define PDEBUG(fmt,...) printf("%s:%d: %s(): " fmt, BASENAME(__FILE__), __LINE__, __FUNCTION__, ##__VA_ARGS__)
+#define PDEBUG(fmt,...) printf("%s:%d: %s(): " fmt, BASENAME(__FILE__), __LINE__, __func__, ##__VA_ARGS__)
 #else
 #define PDEBUG(...)  if (ctx.bIsVerbose) printf(__VA_ARGS__)
 #endif

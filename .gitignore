@@ -15,4 +15,4 @@ obj/
 version.*
 build*/
 libmodbus/
-cmake-build-*/
+cmake-build*/
