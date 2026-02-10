@@ -28,6 +28,7 @@
 #include <float.h>
 #include <math.h>
 #include <inttypes.h>
+#include <limits.h>
 #include <modbus.h>
 #include <stdbool.h>
 #include <stdint.h>
