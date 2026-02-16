@@ -235,9 +235,6 @@ static xMbPollContext ctx = {
   .bIsChipIo = false,
   .bIsBigEndian = false,
   .bIsQuiet = false,
-  .bPrintHex = false,
-  .bEnableMaxSlaveQuirk = false,
-  .bEnableReplyToBroadcastQuirk = false,
 #ifdef MBPOLL_GPIO_RTS
   .iRtsPin = -1,
 #endif
@@ -266,14 +263,14 @@ static xChipIoSerial * xChipSerial;
 static const char sChipIoSlaveAddrStr[] = "chipio slave address";
 static const char sChipIoIrqPinStr[] = "chipio irq pin";
 // additional options -i and -n for chipio
-static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u0WRhVvwBqi:n:xQX";
+static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u0WRhVvwBqi:n:";
 
 #else /* USE_CHIPIO == 0 */
 /* constants ================================================================ */
 #ifdef MBPOLL_GPIO_RTS
-static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u0WR::F::hVvwBqxQX";
+static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u0WR::F::hVvwBq";
 #else
-static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u0WRFhVvwBqxQX";
+static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u0WRFhVvwBq";
 #endif
 // -----------------------------------------------------------------------------
 #endif /* USE_CHIPIO == 0 */
@@ -387,11 +384,9 @@ main (int argc, char **argv) {
   // End of parameter value verification and context creation
   switch (ctx.eMode) {
     case eModeRtu: {
-      // Allow slave address 0 when MAX_SLAVE quirk is enabled (per -Q/-X options)
-      int iMinAddr = ctx.bEnableMaxSlaveQuirk ? 0 : RTU_SLAVEADDR_MIN;
       for (i = 0; i < ctx.iSlaveCount; i++) {
         vCheckIntRange (sSlaveAddrStr, ctx.piSlaveAddr[i],
-                        iMinAddr, SLAVEADDR_MAX);
+                        RTU_SLAVEADDR_MIN, SLAVEADDR_MAX);
       }
       ctx.xBus = modbus_new_rtu (ctx.sDevice, ctx.xRtu.baud, ctx.xRtu.parity,
                                  ctx.xRtu.dbits, ctx.xRtu.sbits);
@@ -399,11 +394,9 @@ main (int argc, char **argv) {
     }
 
     case eModeTcp: {
-      // Apply consistent quirk logic for symmetry (TCP_SLAVEADDR_MIN is already 0)
-      int iMinAddr = ctx.bEnableMaxSlaveQuirk ? 0 : TCP_SLAVEADDR_MIN;
       for (i = 0; i < ctx.iSlaveCount; i++) {
         vCheckIntRange (sSlaveAddrStr, ctx.piSlaveAddr[i],
-                        iMinAddr, SLAVEADDR_MAX);
+                        TCP_SLAVEADDR_MIN, SLAVEADDR_MAX);
       }
       ctx.xBus = modbus_new_tcp_pi (ctx.sDevice, ctx.sTcpPort);
       break;
@@ -418,20 +411,6 @@ main (int argc, char **argv) {
     vIoErrorExit ("Unable to create the libmodbus context");
   }
   modbus_set_debug (ctx.xBus, ctx.bIsVerbose);
-
-  // Enable libmodbus quirks if requested
-  if (ctx.bEnableMaxSlaveQuirk || ctx.bEnableReplyToBroadcastQuirk) {
-    int iQuirks = 0;
-    if (ctx.bEnableMaxSlaveQuirk) {
-      iQuirks |= MODBUS_QUIRK_MAX_SLAVE;
-    }
-    if (ctx.bEnableReplyToBroadcastQuirk) {
-      iQuirks |= MODBUS_QUIRK_REPLY_TO_BROADCAST;
-    }
-    if (modbus_enable_quirks (ctx.xBus, iQuirks) != 0) {
-      vIoErrorExit ("Unable to enable quirk(s): %s", modbus_strerror (errno));
-    }
-  }
 
   if (false == ctx.bIsQuiet) {
     vHello();
@@ -511,11 +490,7 @@ main (int argc, char **argv) {
         // libmodbus uses PDU addresses!
         iStartReg = ctx.piStartRef[0] - ctx.iPduOffset;
 
-        iRet = modbus_set_slave (ctx.xBus, ctx.piSlaveAddr[0]);
-        if (iRet != 0) {
-          vIoErrorExit ("Setting slave address failed: %s",
-                        modbus_strerror (errno));
-        }
+        modbus_set_slave (ctx.xBus, ctx.piSlaveAddr[0]);
         ctx.iTxCount++;
 
         // Write ------------------------------------------------------------
@@ -575,13 +550,7 @@ main (int argc, char **argv) {
             break;
           }
 
-          if (modbus_get_slave (ctx.xBus) != ctx.piSlaveAddr[i]) {
-            iRet = modbus_set_slave (ctx.xBus, ctx.piSlaveAddr[i]);
-            if (iRet != 0) {
-              vIoErrorExit ("Setting slave address failed: %s",
-                            modbus_strerror (errno));
-            }
-          }
+          modbus_set_slave (ctx.xBus, ctx.piSlaveAddr[i]);
           ctx.iTxCount++;
 
           printf ("-- Polling slave %d...", ctx.piSlaveAddr[i]);
@@ -746,13 +715,7 @@ vPrintReadValues (int iAddr, int iCount, xMbPollContext * ctx) {
   int i;
   for (i = 0; i < iCount; i++) {
 
-    // Print address in hex or decimal format
-    // Using separate printf calls to avoid UB from %X with signed int
-    if (ctx->bPrintHex) {
-      printf ("[0x%04X]: \t", (unsigned int)iAddr);
-    } else {
-      printf ("[%d]: \t", iAddr);
-    }
+    printf ("[%d]: \t", iAddr);
 
     switch (ctx->eFormat) {
 
@@ -812,13 +775,8 @@ vPrintReadValues (int iAddr, int iCount, xMbPollContext * ctx) {
 void
 vReportSlaveID (const xMbPollContext * ctx) {
   uint8_t ucReport[256];
-  int iRet;
 
-  iRet = modbus_set_slave (ctx->xBus, ctx->piSlaveAddr[0]);
-  if (iRet != 0) {
-    vIoErrorExit ("Setting slave address failed: %s",
-                  modbus_strerror (errno));
-  }
+  modbus_set_slave (ctx->xBus, ctx->piSlaveAddr[0]);
   // Display configuration
   printf ("Protocol configuration: ModBus %s\n", sModeList[ctx->eMode]);
   printf ("Slave configuration...: address = %d, report slave id\n",
@@ -826,7 +784,7 @@ vReportSlaveID (const xMbPollContext * ctx) {
 
   vPrintCommunicationSetup (ctx);
 
-  iRet = modbus_report_slave_id (ctx->xBus, 256, ucReport);
+  int iRet = modbus_report_slave_id (ctx->xBus, 256, ucReport);
 
   if (iRet < 0) {
 
@@ -1189,9 +1147,6 @@ vUsage (FILE * stream, int exit_msg) {
            "  -l #          Poll rate in ms, ( > %d, %d is default)\n"
            "  -o #          Time-out in seconds (%.2f - %.2f, %.2f s is default)\n"
            "  -q            Quiet mode.  Minimum output only\n"
-           "  -x            Print address (reference) in hexadecimal format\n"
-           "  -Q            Enable MAX_SLAVE quirk (accept slave id 0-255)\n"
-           "  -X            Enable REPLY_TO_BROADCAST quirk (send reply to broadcast)\n"
            "Options for ModBus / TCP : \n"
            "  -p #          TCP port number (%s is default)\n"
            "Options for ModBus RTU : \n"
@@ -1501,18 +1456,6 @@ parse_args (int argc, char **argv) {
 
       case 'q':
         ctx.bIsQuiet = true;
-        break;
-
-      case 'x':
-        ctx.bPrintHex = true;
-        break;
-
-      case 'Q':
-        ctx.bEnableMaxSlaveQuirk = true;
-        break;
-
-      case 'X':
-        ctx.bEnableReplyToBroadcastQuirk = true;
         break;
 
         // TCP -----------------------------------------------------------------
