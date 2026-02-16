@@ -236,6 +236,8 @@ static xMbPollContext ctx = {
   .bIsBigEndian = false,
   .bIsQuiet = false,
   .bPrintHex = false,
+  .bEnableMaxSlaveQuirk = false,
+  .bEnableReplyToBroadcastQuirk = false,
 #ifdef MBPOLL_GPIO_RTS
   .iRtsPin = -1,
 #endif
@@ -264,14 +266,14 @@ static xChipIoSerial * xChipSerial;
 static const char sChipIoSlaveAddrStr[] = "chipio slave address";
 static const char sChipIoIrqPinStr[] = "chipio irq pin";
 // additional options -i and -n for chipio
-static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u0WRhVvwBqi:n:x";
+static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u0WRhVvwBqi:n:xQX";
 
 #else /* USE_CHIPIO == 0 */
 /* constants ================================================================ */
 #ifdef MBPOLL_GPIO_RTS
-static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u0WR::F::hVvwBqx";
+static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u0WR::F::hVvwBqxQX";
 #else
-static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u0WRFhVvwBqx";
+static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u0WRFhVvwBqxQX";
 #endif
 // -----------------------------------------------------------------------------
 #endif /* USE_CHIPIO == 0 */
@@ -385,9 +387,11 @@ main (int argc, char **argv) {
   // End of parameter value verification and context creation
   switch (ctx.eMode) {
     case eModeRtu: {
+      // Allow slave address 0 when MAX_SLAVE quirk is enabled (per -Q/-X options)
+      int iMinAddr = ctx.bEnableMaxSlaveQuirk ? 0 : RTU_SLAVEADDR_MIN;
       for (i = 0; i < ctx.iSlaveCount; i++) {
         vCheckIntRange (sSlaveAddrStr, ctx.piSlaveAddr[i],
-                        RTU_SLAVEADDR_MIN, SLAVEADDR_MAX);
+                        iMinAddr, SLAVEADDR_MAX);
       }
       ctx.xBus = modbus_new_rtu (ctx.sDevice, ctx.xRtu.baud, ctx.xRtu.parity,
                                  ctx.xRtu.dbits, ctx.xRtu.sbits);
@@ -395,9 +399,11 @@ main (int argc, char **argv) {
     }
 
     case eModeTcp: {
+      // Apply consistent quirk logic for symmetry (TCP_SLAVEADDR_MIN is already 0)
+      int iMinAddr = ctx.bEnableMaxSlaveQuirk ? 0 : TCP_SLAVEADDR_MIN;
       for (i = 0; i < ctx.iSlaveCount; i++) {
         vCheckIntRange (sSlaveAddrStr, ctx.piSlaveAddr[i],
-                        TCP_SLAVEADDR_MIN, SLAVEADDR_MAX);
+                        iMinAddr, SLAVEADDR_MAX);
       }
       ctx.xBus = modbus_new_tcp_pi (ctx.sDevice, ctx.sTcpPort);
       break;
@@ -412,6 +418,20 @@ main (int argc, char **argv) {
     vIoErrorExit ("Unable to create the libmodbus context");
   }
   modbus_set_debug (ctx.xBus, ctx.bIsVerbose);
+
+  // Enable libmodbus quirks if requested
+  if (ctx.bEnableMaxSlaveQuirk || ctx.bEnableReplyToBroadcastQuirk) {
+    int iQuirks = 0;
+    if (ctx.bEnableMaxSlaveQuirk) {
+      iQuirks |= MODBUS_QUIRK_MAX_SLAVE;
+    }
+    if (ctx.bEnableReplyToBroadcastQuirk) {
+      iQuirks |= MODBUS_QUIRK_REPLY_TO_BROADCAST;
+    }
+    if (modbus_enable_quirks (ctx.xBus, iQuirks) != 0) {
+      vIoErrorExit ("Unable to enable quirk(s): %s", modbus_strerror (errno));
+    }
+  }
 
   if (false == ctx.bIsQuiet) {
     vHello();
@@ -1170,6 +1190,8 @@ vUsage (FILE * stream, int exit_msg) {
            "  -o #          Time-out in seconds (%.2f - %.2f, %.2f s is default)\n"
            "  -q            Quiet mode.  Minimum output only\n"
            "  -x            Print address (reference) in hexadecimal format\n"
+           "  -Q            Enable MAX_SLAVE quirk (accept slave id 0-255)\n"
+           "  -X            Enable REPLY_TO_BROADCAST quirk (send reply to broadcast)\n"
            "Options for ModBus / TCP : \n"
            "  -p #          TCP port number (%s is default)\n"
            "Options for ModBus RTU : \n"
@@ -1483,6 +1505,14 @@ parse_args (int argc, char **argv) {
 
       case 'x':
         ctx.bPrintHex = true;
+        break;
+
+      case 'Q':
+        ctx.bEnableMaxSlaveQuirk = true;
+        break;
+
+      case 'X':
+        ctx.bEnableReplyToBroadcastQuirk = true;
         break;
 
         // TCP -----------------------------------------------------------------

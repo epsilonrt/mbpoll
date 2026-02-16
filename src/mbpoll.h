@@ -89,6 +89,8 @@ typedef struct xMbPollContext {
   bool bIsBigEndian;
   bool bIsQuiet;
   bool bPrintHex;
+  bool bEnableMaxSlaveQuirk;
+  bool bEnableReplyToBroadcastQuirk;
 #ifdef MBPOLL_GPIO_RTS
   int iRtsPin;
 #endif
