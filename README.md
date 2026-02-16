@@ -219,6 +219,7 @@ On Unix systems, a man page is also available: `man mbpoll`
       -l #          Poll rate in ms, ( > 100, 1000 is default)
       -o #          Time-out in seconds (0.01 - 10.00, 1.00 s is default)
       -q            Quiet mode.  Minimum output only
+      -x            Print address (reference) in hexadecimal format
     Options for ModBus / TCP :
       -p #          TCP port number (502 is default)
     Options for ModBus RTU :

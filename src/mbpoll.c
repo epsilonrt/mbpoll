@@ -235,6 +235,7 @@ static xMbPollContext ctx = {
   .bIsChipIo = false,
   .bIsBigEndian = false,
   .bIsQuiet = false,
+  .bPrintHex = false,
 #ifdef MBPOLL_GPIO_RTS
   .iRtsPin = -1,
 #endif
@@ -263,14 +264,14 @@ static xChipIoSerial * xChipSerial;
 static const char sChipIoSlaveAddrStr[] = "chipio slave address";
 static const char sChipIoIrqPinStr[] = "chipio irq pin";
 // additional options -i and -n for chipio
-static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u0WRhVvwBqi:n:";
+static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u0WRhVvwBqi:n:x";
 
 #else /* USE_CHIPIO == 0 */
 /* constants ================================================================ */
 #ifdef MBPOLL_GPIO_RTS
-static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u0WR::F::hVvwBq";
+static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u0WR::F::hVvwBqx";
 #else
-static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u0WRFhVvwBq";
+static const char * short_options = "m:a:r:c:t:1l:o:p:b:d:s:P:u0WRFhVvwBqx";
 #endif
 // -----------------------------------------------------------------------------
 #endif /* USE_CHIPIO == 0 */
@@ -725,7 +726,13 @@ vPrintReadValues (int iAddr, int iCount, xMbPollContext * ctx) {
   int i;
   for (i = 0; i < iCount; i++) {
 
-    printf ("[%d]: \t", iAddr);
+    // Print address in hex or decimal format
+    // Using separate printf calls to avoid UB from %X with signed int
+    if (ctx->bPrintHex) {
+      printf ("[0x%04X]: \t", (unsigned int)iAddr);
+    } else {
+      printf ("[%d]: \t", iAddr);
+    }
 
     switch (ctx->eFormat) {
 
@@ -1162,6 +1169,7 @@ vUsage (FILE * stream, int exit_msg) {
            "  -l #          Poll rate in ms, ( > %d, %d is default)\n"
            "  -o #          Time-out in seconds (%.2f - %.2f, %.2f s is default)\n"
            "  -q            Quiet mode.  Minimum output only\n"
+           "  -x            Print address (reference) in hexadecimal format\n"
            "Options for ModBus / TCP : \n"
            "  -p #          TCP port number (%s is default)\n"
            "Options for ModBus RTU : \n"
@@ -1471,6 +1479,10 @@ parse_args (int argc, char **argv) {
 
       case 'q':
         ctx.bIsQuiet = true;
+        break;
+
+      case 'x':
+        ctx.bPrintHex = true;
         break;
 
         // TCP -----------------------------------------------------------------

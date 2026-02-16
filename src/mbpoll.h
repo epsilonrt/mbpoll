@@ -88,6 +88,7 @@ typedef struct xMbPollContext {
   bool bIsChipIo;
   bool bIsBigEndian;
   bool bIsQuiet;
+  bool bPrintHex;
 #ifdef MBPOLL_GPIO_RTS
   int iRtsPin;
 #endif
