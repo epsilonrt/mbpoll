@@ -169,6 +169,10 @@ else()
   target_link_directories(mbpoll PRIVATE ${LIBMODBUS_LIBRARY_DIRS})
   target_compile_options(mbpoll PRIVATE ${LIBMODBUS_CFLAGS_OTHER})
 
+  if (CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
+    target_link_libraries(mbpoll PRIVATE m)
+  endif()
+
   if(MBPOLL_GPIO_RTS)
     target_link_libraries(mbpoll PRIVATE ${PIDUINO_LIBRARIES})
     target_link_directories(mbpoll PRIVATE ${PIDUINO_LIBRARY_DIRS})
