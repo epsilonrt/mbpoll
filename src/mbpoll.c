@@ -456,6 +456,19 @@ main (int argc, char **argv) {
     modbus_rtu_set_rts (ctx.xBus, ctx.iRtuMode);
   }
 
+  // TCP uses the response timeout for the connection handshake as well.
+  uint32_t  sec, usec;
+#ifdef DEBUG
+
+  modbus_get_byte_timeout (ctx.xBus, &sec, &usec);
+  PDEBUG ("Get byte timeout: %d s, %d us\n", sec, usec);
+#endif
+  sec = (uint32_t) ctx.dTimeout;
+  usec = (uint32_t) ( (ctx.dTimeout - sec) * 1E6);
+  modbus_set_response_timeout (ctx.xBus, sec, usec);
+  PDEBUG ("Set response timeout to %"PRIu32" sec, %"PRIu32" us\n", sec, usec);
+
+
   // Connection au bus
   if (modbus_connect (ctx.xBus) == -1) {
 
@@ -469,18 +482,6 @@ main (int argc, char **argv) {
    * when opening the port as a start bit.
    */
   mb_delay (20);
-
-  // Set response timeout
-  uint32_t  sec, usec;
-#ifdef DEBUG
-
-  modbus_get_byte_timeout (ctx.xBus, &sec, &usec);
-  PDEBUG ("Get byte timeout: %d s, %d us\n", sec, usec);
-#endif
-  sec = (uint32_t) ctx.dTimeout;
-  usec = (uint32_t) ( (ctx.dTimeout - sec) * 1E6);
-  modbus_set_response_timeout (ctx.xBus, sec, usec);
-  PDEBUG ("Set response timeout to %"PRIu32" sec, %"PRIu32" us\n", sec, usec);
 
   // vSigIntHandler() intercepte le CTRL+C
   signal (SIGINT, vSigIntHandler);
