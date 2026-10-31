@@ -705,6 +705,8 @@ main (int argc, char **argv) {
                 }
                 vPrintReadValues (ctx.piStartRef[m], ctx.iCount, &ctx);
               }
+              // After printing all register values for this poll
+              fflush (stdout);
             }
             else {
               // On failure, we report error.
